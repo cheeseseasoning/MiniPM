@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('이슈 상세')}"></head>
+<body>
+<header th:replace="~{fragments/common :: header}"></header>
+<aside th:replace="~{fragments/common :: sidebar('projects')}"></aside>
+
+<main class="app-main">
+    <div class="container-fluid px-0">
+        <nav class="page-breadcrumb" aria-label="breadcrumb">
+            <a th:href="@{/project}">프로젝트</a><i class="bi bi-chevron-right"></i>
+            <a th:href="@{/project/{projectId}/issues(projectId=${project.projectId})}" th:text="${project.name}">프로젝트</a>
+            <i class="bi bi-chevron-right"></i><span th:text="|이슈 #${issue.issueId}|">이슈</span>
+        </nav>
+
+        <div th:replace="~{fragments/common :: alerts}"></div>
+
+        <section class="surface-card detail-hero mb-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between gap-3">
+                <div class="d-flex gap-3 align-items-start">
+                    <div class="detail-icon"><i class="bi bi-check2-square"></i></div>
+                    <div>
+                        <div class="d-flex flex-wrap gap-2 mb-2">
+                            <span class="neutral-badge" th:text="|#${issue.issueId}|">#1</span>
+                            <span class="neutral-badge" th:text="${issue.issueType}">BUG</span>
+                            <span class="neutral-badge" th:text="${issue.priority}">HIGH</span>
+                            <span class="neutral-badge" th:classappend="${issue.status == 'DONE'} ? ' status-done' : ''"
+                                  th:text="${issue.status}">TODO</span>
+                        </div>
+                        <h1 class="detail-title" th:text="${issue.title}">이슈 제목</h1>
+                        <p class="mb-0 text-secondary"
+                           th:text="|${issue.reporterName} (${issue.reporterLoginId}) 님이 등록|">등록자</p>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 align-self-md-start">
+                    <a th:href="@{/project/{projectId}/issues/{issueId}/edit(projectId=${project.projectId}, issueId=${issue.issueId})}"
+                       class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> 수정</a>
+                    <form th:if="${canDelete}"
+                          th:action="@{/project/{projectId}/issues/{issueId}/delete(projectId=${project.projectId}, issueId=${issue.issueId})}"
+                          method="post" onsubmit="return confirm('이슈를 삭제하시겠습니까? 댓글과 상태 변경 이력은 보존됩니다.');">
+                        <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash3"></i> 삭제</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <div class="row g-4 align-items-start">
+            <div class="col-12 col-xl-8">
+                <section class="surface-card issue-section-card mb-4">
+                    <div class="card-section-title"><h2>이슈 내용</h2></div>
+                    <div class="content-box" th:text="${issue.content}">이슈 내용</div>
+                </section>
+
+                <section th:if="${issue.status == 'DONE'}" class="surface-card issue-section-card mb-4">
+                    <div class="card-section-title"><h2>해결 정보</h2><i class="bi bi-check-circle"></i></div>
+                    <div class="resolution-box mb-3" th:text="${issue.resolution}">해결 내용</div>
+                    <div class="d-flex flex-wrap gap-3 text-secondary small">
+                        <span><i class="bi bi-person-check"></i>
+                            <span th:text="|${issue.resolvedByName} (${issue.resolvedByLoginId})|">처리자</span></span>
+                        <span><i class="bi bi-clock"></i>
+                            <span th:text="${issue.resolvedAt != null ? #temporals.format(issue.resolvedAt, 'yyyy-MM-dd HH:mm') : '-'}">처리 시각</span></span>
+                    </div>
+                </section>
+
+                <section class="surface-card issue-section-card mb-4">
+                    <div class="card-section-title">
+                        <h2>상태 변경 이력</h2>
+                        <span class="result-count" th:text="|${#lists.size(statusHistories)}건|">0건</span>
+                    </div>
+
+                    <div th:if="${#lists.isEmpty(statusHistories)}" class="compact-empty">
+                        아직 상태 변경 이력이 없습니다.
+                    </div>
+
+                    <ul th:unless="${#lists.isEmpty(statusHistories)}" class="timeline">
+                        <li th:each="history : ${statusHistories}" class="timeline-item">
+                            <span class="timeline-dot"></span>
+                            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                <span class="neutral-badge" th:text="${history.previousStatus}">TODO</span>
+                                <i class="bi bi-arrow-right text-secondary"></i>
+                                <span class="neutral-badge" th:classappend="${history.newStatus == 'DONE'} ? ' status-done' : ''"
+                                      th:text="${history.newStatus}">DONE</span>
+                            </div>
+                            <p class="mb-1 history-member"
+                               th:text="|${history.memberName} (${history.memberLoginId})|">변경자</p>
+                            <time class="text-secondary small"
+                                  th:text="${history.changedAt != null ? #temporals.format(history.changedAt, 'yyyy-MM-dd HH:mm') : '-'}">변경 시각</time>
+                        </li>
+                    </ul>
+                </section>
+
+                <section class="surface-card issue-section-card">
+                    <div class="card-section-title">
+                        <h2>댓글</h2>
+                        <span class="result-count" th:text="|${#lists.size(comments)}개|">0개</span>
+                    </div>
+
+                    <div th:if="${#lists.isEmpty(comments)}" class="compact-empty mb-4">
+                        아직 등록된 댓글이 없습니다. 첫 댓글을 남겨보세요.
+                    </div>
+
+                    <ul th:unless="${#lists.isEmpty(comments)}" class="comment-list mb-4">
+                        <li th:each="comment : ${comments}" class="comment-item">
+                            <div class="d-flex gap-3">
+                                <span class="comment-avatar"><i class="bi bi-person"></i></span>
+                                <div class="flex-grow-1 min-width-0">
+                                    <div class="d-flex flex-wrap justify-content-between gap-2">
+                                        <div>
+                                            <strong th:text="${comment.memberName}">작성자</strong>
+                                            <span class="text-secondary small" th:text="|@${comment.memberLoginId}|">@loginId</span>
+                                        </div>
+                                        <time class="text-secondary small"
+                                              th:text="${comment.createdAt != null ? #temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm') : '-'}">등록일</time>
+                                    </div>
+                                    <div class="comment-content" th:text="${comment.content}">댓글 내용</div>
+                                    <div th:if="${comment.memberId == loginMemberId or isProjectAdmin}"
+                                         class="d-flex flex-wrap gap-2 mt-3">
+                                        <a th:if="${comment.memberId == loginMemberId}"
+                                           th:href="@{/project/{projectId}/issues/{issueId}/comments/{commentId}/edit(projectId=${project.projectId}, issueId=${issue.issueId}, commentId=${comment.commentId})}"
+                                           class="btn btn-sm btn-outline-secondary">수정</a>
+                                        <form th:action="@{/project/{projectId}/issues/{issueId}/comments/{commentId}/delete(projectId=${project.projectId}, issueId=${issue.issueId}, commentId=${comment.commentId})}"
+                                              method="post" onsubmit="return confirm('댓글을 삭제하시겠습니까?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">삭제</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+
+                    <form th:action="@{/project/{projectId}/issues/{issueId}/comments(projectId=${project.projectId}, issueId=${issue.issueId})}"
+                          th:object="${issueCommentCreateDTO}" method="post" class="comment-write-box">
+                        <label for="comment-content" class="form-label">댓글 작성</label>
+                        <textarea id="comment-content" th:field="*{content}" maxlength="2000" rows="4"
+                                  class="form-control" th:classappend="${#fields.hasErrors('content')} ? ' is-invalid' : ''"
+                                  placeholder="작업 진행 내용이나 의견을 남겨주세요"></textarea>
+                        <div th:if="${#fields.hasErrors('content')}" th:errors="*{content}" class="invalid-feedback">댓글 내용 오류</div>
+                        <div class="d-flex justify-content-between align-items-center gap-3 mt-3">
+                            <span class="text-secondary small">최대 2,000자</span>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i> 댓글 등록</button>
+                        </div>
+                    </form>
+                </section>
+            </div>
+
+            <div class="col-12 col-xl-4">
+                <section class="surface-card mb-4 issue-side-card">
+                    <div class="card-section-title"><h2>상세 정보</h2></div>
+                    <div class="side-info-list">
+                        <div><span>담당자</span><strong th:if="${issue.assigneeId != null}"
+                              th:text="|${issue.assigneeName} (${issue.assigneeLoginId})|">담당자</strong>
+                            <strong th:unless="${issue.assigneeId != null}" class="text-secondary">미지정</strong></div>
+                        <div><span>등록일</span><strong th:text="${issue.createdAt != null ? #temporals.format(issue.createdAt, 'yyyy-MM-dd HH:mm') : '-'}">등록일</strong></div>
+                        <div><span>수정일</span><strong th:text="${issue.updatedAt != null ? #temporals.format(issue.updatedAt, 'yyyy-MM-dd HH:mm') : '-'}">수정일</strong></div>
+                    </div>
+                </section>
+
+                <section class="surface-card issue-side-card">
+                    <div class="card-section-title"><h2>상태 변경</h2></div>
+                    <form th:action="@{/project/{projectId}/issues/{issueId}/status(projectId=${project.projectId}, issueId=${issue.issueId})}"
+                          th:object="${issueStatusUpdateDTO}" method="post">
+                        <div class="mb-3">
+                            <label for="status" class="form-label">변경할 상태</label>
+                            <select id="status" th:field="*{status}" class="form-select"
+                                    th:classappend="${#fields.hasErrors('status')} ? ' is-invalid' : ''">
+                                <option value="TODO">할 일</option><option value="IN_PROGRESS">진행 중</option><option value="DONE">완료</option>
+                            </select>
+                            <div th:if="${#fields.hasErrors('status')}" th:errors="*{status}" class="invalid-feedback">상태 오류</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="resolution" class="form-label">해결 내용</label>
+                            <textarea id="resolution" th:field="*{resolution}" maxlength="1000" rows="5"
+                                      class="form-control" th:classappend="${#fields.hasErrors('resolution')} ? ' is-invalid' : ''"
+                                      placeholder="완료 상태에서 입력하세요"></textarea>
+                            <div th:if="${#fields.hasErrors('resolution')}" th:errors="*{resolution}" class="invalid-feedback">해결 내용 오류</div>
+                            <div class="form-text">완료로 변경할 때 필수이며, 다른 상태로 변경하면 기존 해결 정보는 비워집니다.</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">상태 변경</button>
+                    </form>
+                </section>
+            </div>
+        </div>
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/common :: scripts}"></th:block>
+</body>
+</html>

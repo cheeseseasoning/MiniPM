@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/common :: head('내 정보')}"></head>
+
+<body>
+
+<header th:replace="~{fragments/common :: header}"></header>
+
+<th:block th:replace="~{fragments/common :: sidebar('profile')}">
+</th:block>
+
+<main class="app-main">
+    <div class="content-wrap">
+
+        <div class="page-heading">
+            <div>
+                <p class="page-eyebrow">MY PROFILE</p>
+
+                <h1 class="page-title">
+                    내 정보
+                </h1>
+
+                <p class="page-description">
+                    회원 정보와 현재 로그인 방식을 확인합니다.
+                </p>
+            </div>
+
+            <a th:href="@{/mypage/dashboard}"
+               class="btn btn-outline-secondary">
+                <i class="bi bi-grid me-1"></i>
+                대시보드
+            </a>
+        </div>
+
+        <th:block th:replace="~{fragments/common :: alerts}">
+        </th:block>
+
+        <div class="row g-4">
+            <div class="col-12 col-xl-8">
+
+                <section class="surface-card">
+                    <div class="surface-card-header">
+                        <div class="d-flex align-items-center gap-3">
+
+                            <div class="project-icon mb-0">
+                                <i class="bi bi-person"></i>
+                            </div>
+
+                            <div>
+                                <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                                    <h2 class="section-title"
+                                        th:text="${profile.name}">
+                                        사용자 이름
+                                    </h2>
+
+                                    <span th:if="${profile.oauthProvider == 'KAKAO'}"
+                                          class="account-provider-badge account-provider-kakao">
+                                        <i class="bi bi-chat-fill"></i>
+                                        카카오 로그인
+                                    </span>
+
+                                    <span th:unless="${profile.oauthProvider == 'KAKAO'}"
+                                          class="account-provider-badge account-provider-local">
+                                        <i class="bi bi-person-check"></i>
+                                        일반 로그인
+                                    </span>
+                                </div>
+
+                                <p class="section-caption"
+                                   th:text="|@${profile.loginId}|">
+                                    @loginId
+                                </p>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="surface-card-body">
+                        <div class="info-grid">
+
+                            <div class="info-item">
+                                <span class="info-label">
+                                    이름
+                                </span>
+
+                                <strong class="info-value"
+                                        th:text="${profile.name}">
+                                    사용자 이름
+                                </strong>
+                            </div>
+
+                            <div class="info-item">
+                                <span class="info-label">
+                                    로그인 아이디
+                                </span>
+
+                                <strong class="info-value"
+                                        th:text="${profile.loginId}">
+                                    loginId
+                                </strong>
+                            </div>
+
+                            <div class="info-item">
+                                <span class="info-label">
+                                    이메일
+                                </span>
+
+                                <strong class="info-value"
+                                        th:text="${profile.email}">
+                                    user@example.com
+                                </strong>
+                            </div>
+
+                            <div class="info-item">
+                                <span class="info-label">
+                                    가입일
+                                </span>
+
+                                <strong class="info-value"
+                                        th:text="${profile.createdAt != null
+                                            ? #temporals.format(
+                                                profile.createdAt,
+                                                'yyyy-MM-dd HH:mm'
+                                            )
+                                            : '-'}">
+                                    가입일
+                                </strong>
+                            </div>
+
+                        </div>
+
+                        <div th:if="${profile.oauthProvider == 'KAKAO'}"
+                             class="alert alert-light border d-flex align-items-start gap-2 mt-4 mb-0"
+                             role="status">
+                            <i class="bi bi-info-circle mt-1"></i>
+
+                            <div>
+                                <strong class="d-block mb-1">
+                                    카카오 계정으로 연결되어 있습니다.
+                                </strong>
+
+                                <span class="text-secondary small">
+                                    로그인과 비밀번호 관리는 카카오 계정에서 진행합니다.
+                                </span>
+                            </div>
+                        </div>
+
+                        <div th:unless="${profile.oauthProvider == 'KAKAO'}"
+                             class="alert alert-light border d-flex align-items-start gap-2 mt-4 mb-0"
+                             role="status">
+                            <i class="bi bi-info-circle mt-1"></i>
+
+                            <div>
+                                <strong class="d-block mb-1">
+                                    일반 회원 계정입니다.
+                                </strong>
+
+                                <span class="text-secondary small">
+                                    MiniPM 아이디와 비밀번호로 로그인하는 계정입니다.
+                                </span>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/common :: scripts}">
+</th:block>
+
+</body>
+</html>

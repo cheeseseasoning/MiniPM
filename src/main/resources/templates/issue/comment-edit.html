@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('댓글 수정')}"></head>
+<body>
+<header th:replace="~{fragments/common :: header}"></header>
+<aside th:replace="~{fragments/common :: sidebar('projects')}"></aside>
+
+<main class="app-main">
+    <div class="container-fluid px-0 form-page-wrap">
+        <nav class="page-breadcrumb" aria-label="breadcrumb">
+            <a th:href="@{/project}">프로젝트</a><i class="bi bi-chevron-right"></i>
+            <a th:href="@{/project/{projectId}/issues/{issueId}(projectId=${projectId}, issueId=${issueId})}">이슈 상세</a>
+            <i class="bi bi-chevron-right"></i><span>댓글 수정</span>
+        </nav>
+
+        <div class="page-heading">
+            <div><p class="page-eyebrow">EDIT COMMENT</p><h1>댓글 수정</h1>
+                <p>작성한 댓글의 내용을 수정합니다.</p></div>
+        </div>
+
+        <section class="surface-card form-card">
+            <form th:action="@{/project/{projectId}/issues/{issueId}/comments/{commentId}/edit(projectId=${projectId}, issueId=${issueId}, commentId=${commentId})}"
+                  th:object="${issueCommentUpdateDTO}" method="post">
+                <label for="content" class="form-label">댓글 내용</label>
+                <textarea id="content" th:field="*{content}" maxlength="2000" rows="8"
+                          class="form-control" th:classappend="${#fields.hasErrors('content')} ? ' is-invalid' : ''"
+                          placeholder="댓글 내용을 입력하세요"></textarea>
+                <div th:if="${#fields.hasErrors('content')}" th:errors="*{content}" class="invalid-feedback">댓글 내용 오류</div>
+                <div class="form-text">최대 2,000자까지 입력할 수 있습니다.</div>
+
+                <div class="form-actions mt-4">
+                    <a th:href="@{/project/{projectId}/issues/{issueId}(projectId=${projectId}, issueId=${issueId})}"
+                       class="btn btn-outline-secondary">취소</a>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> 수정 저장</button>
+                </div>
+            </form>
+        </section>
+    </div>
+</main>
+<th:block th:replace="~{fragments/common :: scripts}"></th:block>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/common :: head('프로젝트 멤버')}"></head>
+
+<body>
+
+<header th:replace="~{fragments/common :: header}"></header>
+<th:block th:replace="~{fragments/common :: sidebar('projects')}"></th:block>
+
+<main class="app-main">
+    <div class="content-wrap">
+
+        <nav class="breadcrumb-wrap" aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a th:href="@{/project}">내 프로젝트</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a th:href="@{/project/{projectId}(projectId=${project.projectId})}"
+                       th:text="${project.name}">
+                        프로젝트 상세
+                    </a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">
+                    멤버 관리
+                </li>
+            </ol>
+        </nav>
+
+        <div class="page-heading">
+            <div>
+                <h1 class="page-title">프로젝트 멤버</h1>
+                <p class="page-description">
+                    <span th:text="${project.name}">프로젝트 이름</span>의 참여자를 확인합니다.
+                </p>
+            </div>
+
+            <a th:href="@{/project/{projectId}(projectId=${project.projectId})}"
+               class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>
+                프로젝트 상세
+            </a>
+        </div>
+
+        <th:block th:replace="~{fragments/common :: alerts}"></th:block>
+
+        <section th:if="${isAdmin}"
+                 class="surface-card mb-4">
+            <div class="surface-card-header">
+                <div>
+                    <h2 class="section-title">새 멤버 추가</h2>
+                    <p class="section-caption">
+                        가입된 회원의 이메일을 정확히 입력해주세요.
+                    </p>
+                </div>
+
+                <span class="neutral-badge role-badge-admin">ADMIN 전용</span>
+            </div>
+
+            <div class="surface-card-body">
+                <form th:action="@{/project/{projectId}/members/add(projectId=${project.projectId})}"
+                      th:object="${projectMemberAddDTO}"
+                      method="post">
+
+                    <div class="row g-2 align-items-start">
+                        <div class="col-12 col-md">
+                            <label for="email" class="visually-hidden">
+                                추가할 회원 이메일
+                            </label>
+
+                            <input type="email"
+                                   id="email"
+                                   th:field="*{email}"
+                                   class="form-control"
+                                   th:classappend="${#fields.hasErrors('email')} ? ' is-invalid' : ''"
+                                   maxlength="255"
+                                   placeholder="member@example.com">
+
+                            <p th:if="${#fields.hasErrors('email')}"
+                               th:errors="*{email}"
+                               class="field-error">
+                                이메일 오류
+                            </p>
+                        </div>
+
+                        <div class="col-12 col-md-auto">
+                            <button type="submit"
+                                    class="btn btn-primary w-100 px-4">
+                                <i class="bi bi-person-plus me-1"></i>
+                                멤버 추가
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section class="surface-card">
+            <div class="surface-card-header">
+                <div>
+                    <h2 class="section-title">참여 멤버</h2>
+                    <p class="section-caption">
+                        프로젝트에 참여 중인 회원과 역할입니다.
+                    </p>
+                </div>
+
+                <span class="result-count">
+                    총 <strong th:text="${#lists.size(members)}">0</strong>명
+                </span>
+            </div>
+
+            <div th:if="${#lists.isEmpty(members)}"
+                 class="empty-state">
+                <div class="empty-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+                <h3 class="empty-title">참여 중인 멤버가 없습니다.</h3>
+            </div>
+
+            <div th:unless="${#lists.isEmpty(members)}"
+                 class="table-responsive">
+                <table class="table app-table member-table align-middle">
+                    <thead>
+                    <tr>
+                        <th scope="col">이름</th>
+                        <th scope="col">로그인 아이디</th>
+                        <th scope="col">역할</th>
+                        <th scope="col">참여일</th>
+                        <th th:if="${isAdmin}"
+                            scope="col"
+                            class="text-end">
+                            작업
+                        </th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="member : ${members}">
+                        <td data-label="이름">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="comment-avatar">
+                                    <i class="bi bi-person"></i>
+                                </span>
+                                <strong th:text="${member.name}">회원 이름</strong>
+                            </div>
+                        </td>
+
+                        <td data-label="로그인 아이디"
+                            th:text="${member.loginId}">loginId</td>
+
+                        <td data-label="역할">
+                            <span th:text="${member.role}"
+                                  class="neutral-badge"
+                                  th:classappend="${member.role == 'ADMIN'} ? ' role-badge-admin' : ''">
+                                MEMBER
+                            </span>
+                        </td>
+
+                        <td data-label="참여일"
+                            th:text="${member.joinedAt != null
+                            ? #temporals.format(member.joinedAt, 'yyyy-MM-dd HH:mm')
+                            : '-'}">
+                            참여일
+                        </td>
+
+                        <td th:if="${isAdmin}"
+                            data-label="작업"
+                            class="text-end">
+                            <form th:if="${member.role == 'MEMBER'}"
+                                  th:action="@{/project/{projectId}/members/{targetMemberId}/remove(
+                                      projectId=${project.projectId},
+                                      targetMemberId=${member.memberId}
+                                  )}"
+                                  method="post"
+                                  class="d-inline"
+                                  onsubmit="return confirm('이 멤버를 프로젝트에서 내보내시겠습니까?');">
+                                <button type="submit"
+                                        class="btn btn-sm btn-outline-danger">
+                                    내보내기
+                                </button>
+                            </form>
+
+                            <span th:if="${member.role == 'ADMIN'}"
+                                  class="text-secondary">
+                                -
+                            </span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/common :: scripts}"></th:block>
+
+</body>
+</html>

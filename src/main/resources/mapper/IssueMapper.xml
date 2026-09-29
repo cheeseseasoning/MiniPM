@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.or.oti.minipm.mapper.IssueMapper">
+
+    <!-- 이슈 등록 -->
+    <insert id="insertIssue"
+            parameterType="kr.or.oti.minipm.vo.IssueVO">
+
+        <selectKey keyProperty="issueId"
+                   resultType="long"
+                   order="BEFORE">
+            SELECT SEQ_ISSUE.NEXTVAL
+            FROM DUAL
+        </selectKey>
+
+        INSERT INTO ISSUE (
+            ISSUE_ID,
+            PROJECT_ID,
+            TITLE,
+            CONTENT,
+            ISSUE_TYPE,
+            PRIORITY,
+            REPORTER_ID,
+            ASSIGNEE_ID
+        ) VALUES (
+            #{issueId},
+            #{projectId},
+            #{title},
+            #{content},
+            #{issueType},
+            #{priority},
+            #{reporterId},
+            #{assigneeId, jdbcType=NUMERIC}
+        )
+
+    </insert>
+
+	    <!-- 프로젝트별 검색 조건에 맞는 이슈 목록 조회 -->
+    <select id="selectIssuesByProjectId"
+            resultType="kr.or.oti.minipm.vo.IssueVO">
+
+        SELECT I.ISSUE_ID,
+               I.PROJECT_ID,
+               I.TITLE,
+               I.CONTENT,
+               I.ISSUE_TYPE,
+               I.PRIORITY,
+               I.STATUS,
+               I.REPORTER_ID,
+               REPORTER.NAME AS REPORTER_NAME,
+               REPORTER.LOGIN_ID AS REPORTER_LOGIN_ID,
+               I.ASSIGNEE_ID,
+               ASSIGNEE.NAME AS ASSIGNEE_NAME,
+               ASSIGNEE.LOGIN_ID AS ASSIGNEE_LOGIN_ID,
+               I.RESOLUTION,
+               I.RESOLVED_BY,
+               RESOLVER.NAME AS RESOLVED_BY_NAME,
+               RESOLVER.LOGIN_ID AS RESOLVED_BY_LOGIN_ID,
+               I.RESOLVED_AT,
+               I.CREATED_AT,
+               I.UPDATED_AT
+        FROM ISSUE I
+        INNER JOIN MEMBER REPORTER
+                ON REPORTER.MEMBER_ID = I.REPORTER_ID
+        LEFT JOIN MEMBER ASSIGNEE
+               ON ASSIGNEE.MEMBER_ID = I.ASSIGNEE_ID
+        LEFT JOIN MEMBER RESOLVER
+               ON RESOLVER.MEMBER_ID = I.RESOLVED_BY
+        WHERE I.PROJECT_ID = #{projectId}
+          AND I.DELETED_AT IS NULL
+
+        <if test="search != null
+                  and search.keyword != null
+                  and search.keyword != ''">
+            AND UPPER(I.TITLE)
+                LIKE '%' || UPPER(#{search.keyword}) || '%'
+        </if>
+
+        <if test="search != null
+                  and search.status != null
+                  and search.status != ''">
+            AND I.STATUS = #{search.status}
+        </if>
+
+        <if test="search != null
+                  and search.priority != null
+                  and search.priority != ''">
+            AND I.PRIORITY = #{search.priority}
+        </if>
+
+        ORDER BY I.CREATED_AT DESC,
+                 I.ISSUE_ID DESC
+
+    </select>
+    
+        <!-- 프로젝트별 검색 조건에 맞는 이슈 페이징 조회 -->
+    <select id="selectIssuesByProjectIdWithPaging"
+            resultType="kr.or.oti.minipm.vo.IssueVO">
+
+        SELECT I.ISSUE_ID,
+               I.PROJECT_ID,
+               I.TITLE,
+               I.CONTENT,
+               I.ISSUE_TYPE,
+               I.PRIORITY,
+               I.STATUS,
+               I.REPORTER_ID,
+               REPORTER.NAME AS REPORTER_NAME,
+               REPORTER.LOGIN_ID AS REPORTER_LOGIN_ID,
+               I.ASSIGNEE_ID,
+               ASSIGNEE.NAME AS ASSIGNEE_NAME,
+               ASSIGNEE.LOGIN_ID AS ASSIGNEE_LOGIN_ID,
+               I.RESOLUTION,
+               I.RESOLVED_BY,
+               RESOLVER.NAME AS RESOLVED_BY_NAME,
+               RESOLVER.LOGIN_ID AS RESOLVED_BY_LOGIN_ID,
+               I.RESOLVED_AT,
+               I.CREATED_AT,
+               I.UPDATED_AT
+        FROM ISSUE I
+        INNER JOIN MEMBER REPORTER
+                ON REPORTER.MEMBER_ID = I.REPORTER_ID
+        LEFT JOIN MEMBER ASSIGNEE
+               ON ASSIGNEE.MEMBER_ID = I.ASSIGNEE_ID
+        LEFT JOIN MEMBER RESOLVER
+               ON RESOLVER.MEMBER_ID = I.RESOLVED_BY
+        WHERE I.PROJECT_ID = #{projectId}
+          AND I.DELETED_AT IS NULL
+
+        <include refid="issueSearchConditions"/>
+
+        ORDER BY I.CREATED_AT DESC,
+                 I.ISSUE_ID DESC
+        OFFSET #{pageRequest.offset} ROWS
+        FETCH NEXT #{pageRequest.size} ROWS ONLY
+
+    </select>
+
+    <!-- 프로젝트별 검색 조건에 맞는 미삭제 이슈 전체 개수 -->
+    <select id="countIssuesByProjectId"
+            resultType="int">
+
+        SELECT COUNT(*)
+        FROM ISSUE I
+        WHERE I.PROJECT_ID = #{projectId}
+          AND I.DELETED_AT IS NULL
+
+        <include refid="issueSearchConditions"/>
+
+    </select>
+
+	<!-- 프로젝트 내부의 이슈 단건과 회원 정보 조회 -->
+    <select id="selectIssueByIdAndProjectId"
+            resultType="kr.or.oti.minipm.vo.IssueVO">
+
+        SELECT I.ISSUE_ID,
+               I.PROJECT_ID,
+               I.TITLE,
+               I.CONTENT,
+               I.ISSUE_TYPE,
+               I.PRIORITY,
+               I.STATUS,
+               I.REPORTER_ID,
+               REPORTER.NAME AS REPORTER_NAME,
+               REPORTER.LOGIN_ID AS REPORTER_LOGIN_ID,
+               I.ASSIGNEE_ID,
+               ASSIGNEE.NAME AS ASSIGNEE_NAME,
+               ASSIGNEE.LOGIN_ID AS ASSIGNEE_LOGIN_ID,
+               I.RESOLUTION,
+               I.RESOLVED_BY,
+               RESOLVER.NAME AS RESOLVED_BY_NAME,
+               RESOLVER.LOGIN_ID AS RESOLVED_BY_LOGIN_ID,
+               I.RESOLVED_AT,
+               I.CREATED_AT,
+               I.UPDATED_AT
+        FROM ISSUE I
+        INNER JOIN MEMBER REPORTER
+                ON REPORTER.MEMBER_ID = I.REPORTER_ID
+        LEFT JOIN MEMBER ASSIGNEE
+               ON ASSIGNEE.MEMBER_ID = I.ASSIGNEE_ID
+        LEFT JOIN MEMBER RESOLVER
+               ON RESOLVER.MEMBER_ID = I.RESOLVED_BY
+        WHERE I.ISSUE_ID = #{issueId}
+          AND I.PROJECT_ID = #{projectId}
+          AND I.DELETED_AT IS NULL
+
+    </select>
+
+	<!-- 이슈 제목·내용·유형·우선순위·담당자 수정 -->
+    <update id="updateIssue"
+            parameterType="kr.or.oti.minipm.vo.IssueVO">
+
+        UPDATE ISSUE
+        SET TITLE = #{title},
+            CONTENT = #{content},
+            ISSUE_TYPE = #{issueType},
+            PRIORITY = #{priority},
+            ASSIGNEE_ID = #{assigneeId, jdbcType=NUMERIC},
+            UPDATED_AT = SYSTIMESTAMP
+        WHERE ISSUE_ID = #{issueId}
+          AND PROJECT_ID = #{projectId}
+          AND DELETED_AT IS NULL
+
+    </update>
+
+    <!-- 참여 중인 작성자 또는 ADMIN만 이슈 논리 삭제 -->
+    <update id="softDeleteIssue">
+
+        UPDATE ISSUE
+        SET DELETED_AT = SYSTIMESTAMP,
+            DELETED_BY = #{loginMemberId},
+            UPDATED_AT = SYSTIMESTAMP
+        WHERE ISSUE_ID = #{issueId}
+          AND PROJECT_ID = #{projectId}
+          AND DELETED_AT IS NULL
+          AND EXISTS (
+              SELECT 1
+              FROM PROJECT_MEMBER PM
+              INNER JOIN PROJECT P ON P.PROJECT_ID = PM.PROJECT_ID
+              WHERE PM.PROJECT_ID = ISSUE.PROJECT_ID
+                AND PM.MEMBER_ID = #{loginMemberId}
+                AND P.DELETED_AT IS NULL
+                AND (ISSUE.REPORTER_ID = #{loginMemberId} OR PM.ROLE = 'ADMIN')
+          )
+
+    </update>
+
+    <!-- 상태 변경 대상 이슈를 잠그고 알림에 필요한 정보까지 조회 -->
+	<select id="selectIssueForStatusUpdate"
+	        resultType="kr.or.oti.minipm.vo.IssueVO"
+	        useCache="false"
+	        flushCache="true">
+	
+	    SELECT ISSUE_ID,
+	           PROJECT_ID,
+	           TITLE,
+	           STATUS,
+	           REPORTER_ID,
+	           ASSIGNEE_ID
+	    FROM ISSUE
+	    WHERE ISSUE_ID = #{issueId}
+	      AND PROJECT_ID = #{projectId}
+	      AND DELETED_AT IS NULL
+	    FOR UPDATE
+	
+	</select>	
+
+    <!-- 상태와 해결 정보 변경 -->
+    <update id="updateIssueStatus"
+            parameterType="kr.or.oti.minipm.vo.IssueVO">
+
+        UPDATE ISSUE
+        SET STATUS = #{status},
+            <choose>
+                <when test='status == "DONE"'>
+                    RESOLUTION = #{resolution, jdbcType=VARCHAR},
+                    RESOLVED_BY = #{resolvedBy, jdbcType=NUMERIC},
+                    RESOLVED_AT = SYSTIMESTAMP,
+                </when>
+                <otherwise>
+                    RESOLUTION = NULL,
+                    RESOLVED_BY = NULL,
+                    RESOLVED_AT = NULL,
+                </otherwise>
+            </choose>
+            UPDATED_AT = SYSTIMESTAMP
+        WHERE ISSUE_ID = #{issueId}
+          AND PROJECT_ID = #{projectId}
+          AND DELETED_AT IS NULL
+
+    </update>
+
+    <!-- 상태 변경 이력 저장 -->
+    <insert id="insertIssueStatusHistory"
+            parameterType="kr.or.oti.minipm.vo.IssueStatusHistoryVO">
+
+        <selectKey keyProperty="historyId"
+                   resultType="long"
+                   order="BEFORE">
+            SELECT SEQ_ISSUE_STATUS_HISTORY.NEXTVAL
+            FROM DUAL
+        </selectKey>
+
+        INSERT INTO ISSUE_STATUS_HISTORY (
+            HISTORY_ID,
+            ISSUE_ID,
+            PREVIOUS_STATUS,
+            NEW_STATUS,
+            MEMBER_ID,
+            CHANGED_AT
+        ) VALUES (
+            #{historyId},
+            #{issueId},
+            #{previousStatus},
+            #{newStatus},
+            #{memberId},
+            SYSTIMESTAMP
+        )
+
+    </insert>
+    
+	<!-- 특정 이슈의 상태 변경 이력과 변경자 정보 조회 -->
+    <select id="selectStatusHistoriesByIssueId"
+            resultType="kr.or.oti.minipm.vo.IssueStatusHistoryVO">
+
+        SELECT H.HISTORY_ID,
+               H.ISSUE_ID,
+               H.PREVIOUS_STATUS,
+               H.NEW_STATUS,
+               H.MEMBER_ID,
+               M.NAME AS MEMBER_NAME,
+               M.LOGIN_ID AS MEMBER_LOGIN_ID,
+               H.CHANGED_AT
+        FROM ISSUE_STATUS_HISTORY H
+        INNER JOIN MEMBER M
+                ON M.MEMBER_ID = H.MEMBER_ID
+        WHERE H.ISSUE_ID = #{issueId}
+        ORDER BY H.CHANGED_AT ASC,
+                 H.HISTORY_ID ASC
+
+    </select>
+    
+	<!-- 이슈 목록 조회에서 공통으로 사용하는 검색 조건 -->
+    <sql id="issueSearchConditions">
+
+        <if test="search != null
+                  and search.keyword != null
+                  and search.keyword != ''">
+
+            AND (
+                UPPER(I.TITLE)
+                    LIKE '%' || UPPER(#{search.keyword}) || '%'
+
+                OR DBMS_LOB.INSTR(
+                    UPPER(I.CONTENT),
+                    UPPER(#{search.keyword})
+                ) > 0
+            )
+        </if>
+
+        <if test="search != null
+                  and search.issueType != null
+                  and search.issueType != ''">
+            AND I.ISSUE_TYPE = #{search.issueType}
+        </if>
+
+        <if test="search != null
+                  and search.status != null
+                  and search.status != ''">
+            AND I.STATUS = #{search.status}
+        </if>
+
+        <if test="search != null
+                  and search.priority != null
+                  and search.priority != ''">
+            AND I.PRIORITY = #{search.priority}
+        </if>
+
+        <if test="search != null
+                  and search.assigneeId != null">
+            AND I.ASSIGNEE_ID = #{search.assigneeId}
+        </if>
+
+    </sql>
+
+</mapper>

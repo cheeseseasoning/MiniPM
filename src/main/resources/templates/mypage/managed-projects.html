@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/common :: head('관리 프로젝트 현황')}">
+</head>
+
+<body>
+
+<header th:replace="~{fragments/common :: header}">
+</header>
+
+<th:block th:replace="~{fragments/common :: sidebar('dashboard')}">
+</th:block>
+
+<main class="app-main">
+    <div class="content-wrap">
+
+        <div class="page-heading">
+            <div>
+                <p class="page-eyebrow">
+                    ADMIN DASHBOARD
+                </p>
+
+                <h1 class="page-title">
+                    프로젝트별 관리 현황
+                </h1>
+
+                <p class="page-description">
+                    내가 관리자로 참여 중인 프로젝트의 멤버와 이슈 현황을 확인합니다.
+                </p>
+            </div>
+
+            <a th:href="@{/mypage/dashboard}"
+               class="btn btn-outline-secondary">
+
+                <i class="bi bi-arrow-left me-1"></i>
+                대시보드
+            </a>
+        </div>
+
+        <th:block th:replace="~{fragments/common :: alerts}">
+        </th:block>
+
+        <section class="surface-card">
+
+            <div class="surface-card-header">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <h2 class="section-title">
+                            관리 프로젝트
+                        </h2>
+
+                        <span class="neutral-badge role-badge-admin">
+                            ADMIN
+                        </span>
+                    </div>
+
+                    <p class="section-caption">
+                        프로젝트별 멤버 수와 이슈 진행 상태입니다.
+                    </p>
+                </div>
+
+                <span class="result-count">
+                    총
+                    <strong th:text="${#lists.size(managedProjects)}">
+                        0
+                    </strong>개
+                </span>
+            </div>
+
+            <!-- 관리 프로젝트가 없는 경우 -->
+            <div th:if="${#lists.isEmpty(managedProjects)}"
+                 class="surface-card-body">
+
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+
+                    <h3 class="empty-title">
+                        관리 중인 프로젝트가 없습니다.
+                    </h3>
+
+                    <p class="empty-description">
+                        프로젝트를 생성하면 관리자 통계를 확인할 수 있습니다.
+                    </p>
+
+                    <a th:href="@{/project/create}"
+                       class="btn btn-primary">
+
+                        <i class="bi bi-plus-lg me-1"></i>
+                        프로젝트 생성
+                    </a>
+                </div>
+            </div>
+
+            <!-- 관리 프로젝트가 있는 경우 -->
+            <div th:unless="${#lists.isEmpty(managedProjects)}"
+                 class="table-responsive">
+
+                <table class="table app-table">
+                    <thead>
+                    <tr>
+                        <th scope="col">
+                            프로젝트
+                        </th>
+
+                        <th scope="col"
+                            class="text-center">
+                            멤버
+                        </th>
+
+                        <th scope="col"
+                            class="text-center">
+                            전체 이슈
+                        </th>
+
+                        <th scope="col"
+                            class="text-center">
+                            TODO
+                        </th>
+
+                        <th scope="col"
+                            class="text-center">
+                            진행 중
+                        </th>
+
+                        <th scope="col"
+                            class="text-center">
+                            완료
+                        </th>
+
+                        <th scope="col"
+                            class="text-center">
+                            담당자 미지정
+                        </th>
+
+                        <th scope="col"
+                            style="min-width: 180px;">
+                            완료율
+                        </th>
+
+                        <th scope="col"
+                            class="text-center">
+                            작업
+                        </th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="project : ${managedProjects}">
+
+                        <!-- 프로젝트 이름 -->
+                        <td>
+                            <a th:href="@{/project/{projectId}(
+                                    projectId=${project.projectId}
+                               )}"
+                               class="table-link"
+                               th:text="${project.projectName}">
+
+                                프로젝트 이름
+                            </a>
+                        </td>
+
+                        <!-- 멤버 수 -->
+                        <td class="text-center text-nowrap">
+                            <i class="bi bi-people me-1 text-secondary"></i>
+
+                            <span th:text="${project.memberCount}">
+                                0
+                            </span>
+                        </td>
+
+                        <!-- 전체 이슈 -->
+                        <td class="text-center">
+                            <strong th:text="${project.totalIssueCount}">
+                                0
+                            </strong>
+                        </td>
+
+                        <!-- TODO -->
+                        <td class="text-center">
+                            <span class="neutral-badge bg-dark text-white border-dark"
+                                  th:text="${project.todoIssueCount}">
+                                0
+                            </span>
+                        </td>
+
+                        <!-- IN_PROGRESS -->
+                        <td class="text-center">
+                            <span class="neutral-badge bg-secondary text-white border-secondary"
+                                  th:text="${project.inProgressIssueCount}">
+                                0
+                            </span>
+                        </td>
+
+                        <!-- DONE -->
+                        <td class="text-center">
+                            <span class="neutral-badge bg-light text-secondary"
+                                  th:text="${project.doneIssueCount}">
+                                0
+                            </span>
+                        </td>
+
+                        <!-- 담당자 미지정 -->
+                        <td class="text-center">
+                            <span th:if="${project.unassignedIssueCount > 0}"
+                                  class="fw-semibold"
+                                  th:text="${project.unassignedIssueCount}">
+                                0
+                            </span>
+
+                            <span th:unless="${project.unassignedIssueCount > 0}"
+                                  class="text-secondary">
+                                -
+                            </span>
+                        </td>
+
+                        <!-- 완료율 -->
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+
+                                <div class="progress flex-grow-1"
+                                     role="progressbar"
+                                     th:attr="aria-valuenow=${project.completionRate}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100"
+                                     style="height: 7px;">
+
+                                    <div class="progress-bar bg-dark"
+                                         th:style="|width: ${project.completionRate}%|">
+                                    </div>
+                                </div>
+
+                                <span class="small fw-semibold text-nowrap">
+                                    <span th:text="${project.completionRate}">
+                                        0.0
+                                    </span>%
+                                </span>
+                            </div>
+                        </td>
+
+                        <!-- 프로젝트 상세 이동 -->
+                        <td class="text-center">
+                            <a th:href="@{/project/{projectId}(
+                                    projectId=${project.projectId}
+                               )}"
+                               class="btn btn-sm btn-outline-secondary">
+
+                                상세
+                            </a>
+                        </td>
+
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/common :: scripts}">
+</th:block>
+
+</body>
+</html>

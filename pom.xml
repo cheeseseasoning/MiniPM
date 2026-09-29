@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="
+            http://maven.apache.org/POM/4.0.0
+            https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+        Spring Boot가 관리하는 라이브러리 버전과 Maven 빌드 기본 설정을 상속받는다.
+    -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.7.3</version>
+        <relativePath/>
+    </parent>
+
+    <!-- 프로젝트 기본 정보 -->
+    <groupId>kr.or.oti</groupId>
+    <artifactId>MiniPM</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>MiniPM</name>
+    <description>Mini Project Management System</description>
+
+    <properties>
+        <!-- 프로젝트에서 사용할 Java 버전 -->
+        <java.version>11</java.version>
+    </properties>
+
+    <dependencies>
+
+        <!--
+            Spring MVC, REST API, 내장 Tomcat을 제공한다.
+            Controller를 만들 예정이므로 starter 대신 web을 사용한다.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!--
+            MyBatis와 Spring Boot를 연결한다.
+            내부적으로 MyBatis 3.5.x, MyBatis-Spring,
+            Spring JDBC를 함께 가져온다.
+        -->
+        <dependency>
+            <groupId>org.mybatis.spring.boot</groupId>
+            <artifactId>mybatis-spring-boot-starter</artifactId>
+            <version>2.3.2</version>
+        </dependency>
+
+        <!-- Oracle DB에 접속할 때 사용하는 JDBC 드라이버 -->
+        <dependency>
+            <groupId>com.oracle.database.jdbc</groupId>
+            <artifactId>ojdbc11</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!--
+            일반 로그인과 권한 관리에 사용한다.
+            BCryptPasswordEncoder를 통한 비밀번호 암호화도 제공한다.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        
+        <!--
+		    카카오와 같은 외부 서비스의 OAuth2 로그인을 처리한다.
+		    인가 코드 수신, 액세스 토큰 요청,
+		    사용자 정보 조회 기능을 제공한다.
+		-->
+		<dependency>
+		    <groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-starter-oauth2-client</artifactId>
+		</dependency>
+
+        <!-- DTO와 VO 사이의 값을 복사할 때 사용한다. -->
+        <dependency>
+            <groupId>org.modelmapper</groupId>
+            <artifactId>modelmapper</artifactId>
+            <version>3.1.0</version>
+        </dependency>
+
+        <!-- @Data, @Getter, @Setter 등을 사용할 때 필요하다. -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- JUnit, Spring Test, Mockito 등 테스트 기능을 제공한다. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        
+        <!-- Thymeleaf 화면 템플릿 -->
+		<dependency>
+		    <groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-starter-thymeleaf</artifactId>
+		</dependency>
+		
+		<!-- DTO 입력값 검증 -->
+		<dependency>
+		    <groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+		
+		<!-- WebSocket과 STOMP 기반 실시간 통신을 제공한다. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Maven으로 Spring Boot 애플리케이션을 실행하고 패키징한다. -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.or.oti.minipm.mapper.ProjectMapper">
+
+    <!-- 프로젝트 등록 -->
+    <insert id="insertProject"
+            parameterType="kr.or.oti.minipm.vo.ProjectVO">
+
+        <selectKey keyProperty="projectId"
+                   resultType="long"
+                   order="BEFORE">
+            SELECT SEQ_PROJECT.NEXTVAL
+            FROM DUAL
+        </selectKey>
+
+        INSERT INTO PROJECT (
+            PROJECT_ID,
+            NAME,
+            DESCRIPTION,
+            MEMBER_ID
+        ) VALUES (
+            #{projectId},
+            #{name},
+            #{description},
+            #{memberId}
+        )
+
+    </insert>
+
+    <!-- 프로젝트 참여 정보 등록 -->
+    <insert id="insertProjectMember"
+            parameterType="kr.or.oti.minipm.vo.ProjectMemberVO">
+
+        INSERT INTO PROJECT_MEMBER (
+            PROJECT_ID,
+            MEMBER_ID,
+            ROLE
+        ) VALUES (
+            #{projectId},
+            #{memberId},
+            #{role}
+        )
+
+    </insert>
+
+    <!-- 삭제되지 않은 프로젝트 조회 -->
+    <select id="selectProjectById"
+            resultType="kr.or.oti.minipm.vo.ProjectVO">
+
+        SELECT PROJECT_ID,
+               NAME,
+               DESCRIPTION,
+               MEMBER_ID,
+               CREATED_AT,
+               UPDATED_AT
+        FROM PROJECT
+        WHERE PROJECT_ID = #{projectId}
+          AND DELETED_AT IS NULL
+
+    </select>
+    
+    <!-- 삭제되지 않은 프로젝트 이름 조회 -->
+	<select id="selectProjectNameById"
+	        resultType="string">
+	
+	    SELECT NAME
+	    FROM PROJECT
+	    WHERE PROJECT_ID = #{projectId}
+	      AND DELETED_AT IS NULL
+	
+	</select>
+
+    <!-- 삭제되지 않은 프로젝트의 참여 정보 조회 -->
+    <select id="selectProjectMember"
+            resultType="kr.or.oti.minipm.vo.ProjectMemberVO">
+
+        SELECT PM.PROJECT_ID,
+               PM.MEMBER_ID,
+               PM.ROLE,
+               PM.JOINED_AT
+        FROM PROJECT_MEMBER PM
+        INNER JOIN PROJECT P
+                ON P.PROJECT_ID = PM.PROJECT_ID
+        WHERE PM.PROJECT_ID = #{projectId}
+          AND PM.MEMBER_ID = #{memberId}
+          AND P.DELETED_AT IS NULL
+
+    </select>
+
+    <!-- 회원이 참여 중인 미삭제 프로젝트 목록 -->
+    <select id="selectProjectsByMemberId"
+            resultType="kr.or.oti.minipm.vo.ProjectVO">
+
+        SELECT P.PROJECT_ID,
+               P.NAME,
+               P.DESCRIPTION,
+               P.MEMBER_ID,
+               P.CREATED_AT,
+               P.UPDATED_AT
+        FROM PROJECT P
+        INNER JOIN PROJECT_MEMBER PM
+                ON PM.PROJECT_ID = P.PROJECT_ID
+        WHERE PM.MEMBER_ID = #{memberId}
+          AND P.DELETED_AT IS NULL
+        ORDER BY P.CREATED_AT DESC,
+                 P.PROJECT_ID DESC
+
+    </select>
+
+    <!-- 삭제되지 않은 프로젝트의 멤버 목록 -->
+    <select id="selectProjectMembers"
+            resultType="kr.or.oti.minipm.dto.ProjectMemberDTO">
+
+        SELECT PM.PROJECT_ID AS projectId,
+               PM.MEMBER_ID AS memberId,
+               M.LOGIN_ID AS loginId,
+               M.NAME AS name,
+               PM.ROLE AS role,
+               PM.JOINED_AT AS joinedAt
+        FROM PROJECT_MEMBER PM
+        INNER JOIN MEMBER M
+                ON M.MEMBER_ID = PM.MEMBER_ID
+        INNER JOIN PROJECT P
+                ON P.PROJECT_ID = PM.PROJECT_ID
+        WHERE PM.PROJECT_ID = #{projectId}
+          AND P.DELETED_AT IS NULL
+        ORDER BY CASE
+                     WHEN PM.ROLE = 'ADMIN' THEN 0
+                     ELSE 1
+                 END,
+                 PM.JOINED_AT ASC,
+                 PM.MEMBER_ID ASC
+
+    </select>
+    
+    <!-- 삭제되지 않은 프로젝트의 관리자 회원번호 목록 -->
+	<select id="selectProjectAdminIds"
+	        resultType="long">
+	
+	    SELECT PM.MEMBER_ID
+	    FROM PROJECT_MEMBER PM
+	    INNER JOIN PROJECT P
+	            ON P.PROJECT_ID = PM.PROJECT_ID
+	    WHERE PM.PROJECT_ID = #{projectId}
+	      AND PM.ROLE = 'ADMIN'
+	      AND P.DELETED_AT IS NULL
+	    ORDER BY PM.MEMBER_ID ASC
+	
+	</select>
+
+    <!-- 삭제되지 않은 프로젝트의 이름과 설명 수정 -->
+    <update id="updateProject"
+            parameterType="kr.or.oti.minipm.vo.ProjectVO">
+
+        UPDATE PROJECT
+        SET NAME = #{name},
+            DESCRIPTION = #{description, jdbcType=VARCHAR},
+            UPDATED_AT = SYSTIMESTAMP
+        WHERE PROJECT_ID = #{projectId}
+          AND DELETED_AT IS NULL
+
+    </update>
+
+    <!-- 프로젝트의 미삭제 이슈 개수 -->
+    <select id="countIssuesByProjectId"
+            resultType="int">
+
+        SELECT COUNT(*)
+        FROM ISSUE
+        WHERE PROJECT_ID = #{projectId}
+          AND DELETED_AT IS NULL
+
+    </select>
+
+    <!-- 프로젝트 논리 삭제 -->
+    <update id="softDeleteProject">
+
+        UPDATE PROJECT
+        SET DELETED_AT = SYSTIMESTAMP,
+            DELETED_BY = #{loginMemberId},
+            UPDATED_AT = SYSTIMESTAMP
+        WHERE PROJECT_ID = #{projectId}
+          AND DELETED_AT IS NULL
+          AND NOT EXISTS (
+              SELECT 1
+              FROM ISSUE I
+              WHERE I.PROJECT_ID = PROJECT.PROJECT_ID
+                AND I.DELETED_AT IS NULL
+          )
+
+    </update>
+    
+	<!-- ADMIN이 MEMBER 역할의 프로젝트 참여 정보 삭제 -->
+    <delete id="deleteProjectMember">
+
+        DELETE FROM PROJECT_MEMBER
+        WHERE PROJECT_ID = #{projectId}
+          AND MEMBER_ID = #{targetMemberId}
+          AND ROLE = 'MEMBER'
+          AND EXISTS (
+              SELECT 1
+              FROM PROJECT P
+              INNER JOIN PROJECT_MEMBER ADMIN_PM
+                      ON ADMIN_PM.PROJECT_ID = P.PROJECT_ID
+              WHERE P.PROJECT_ID = #{projectId}
+                AND P.DELETED_AT IS NULL
+                AND ADMIN_PM.MEMBER_ID = #{loginMemberId}
+                AND ADMIN_PM.ROLE = 'ADMIN'
+          )
+
+    </delete>
+    
+	<!-- 회원이 담당 중인 미완료 이슈 개수 조회 -->
+    <select id="countOpenIssuesByAssignee"
+            resultType="int">
+
+        SELECT COUNT(*)
+        FROM ISSUE
+        WHERE PROJECT_ID = #{projectId}
+          AND ASSIGNEE_ID = #{memberId}
+          AND STATUS IN ('TODO', 'IN_PROGRESS')
+          AND DELETED_AT IS NULL
+
+    </select>
+    
+    <!-- 프로젝트 페이징과 개수 조회에서 공통으로 사용하는 검색 조건 -->
+    <sql id="projectSearchConditions">
+
+        <if test="search != null
+                  and search.keyword != null
+                  and search.keyword != ''">
+
+            AND (
+                UPPER(P.NAME)
+                    LIKE '%' || UPPER(#{search.keyword}) || '%'
+
+                OR UPPER(P.DESCRIPTION)
+                    LIKE '%' || UPPER(#{search.keyword}) || '%'
+            )
+        </if>
+
+    </sql>
+
+    <!-- 검색 조건에 맞는 참여 프로젝트 페이징 조회 -->
+    <select id="selectProjectsByMemberIdWithPaging"
+            resultType="kr.or.oti.minipm.vo.ProjectVO">
+
+        SELECT P.PROJECT_ID,
+               P.NAME,
+               P.DESCRIPTION,
+               P.MEMBER_ID,
+               P.CREATED_AT,
+               P.UPDATED_AT
+        FROM PROJECT P
+        INNER JOIN PROJECT_MEMBER PM
+                ON PM.PROJECT_ID = P.PROJECT_ID
+        WHERE PM.MEMBER_ID = #{memberId}
+          AND P.DELETED_AT IS NULL
+
+        <include refid="projectSearchConditions"/>
+
+        ORDER BY P.CREATED_AT DESC,
+                 P.PROJECT_ID DESC
+        OFFSET #{pageRequest.offset} ROWS
+        FETCH NEXT #{pageRequest.size} ROWS ONLY
+
+    </select>
+
+    <!-- 검색 조건에 맞는 참여 프로젝트 전체 개수 -->
+    <select id="countProjectsByMemberId"
+            resultType="int">
+
+        SELECT COUNT(*)
+        FROM PROJECT P
+        INNER JOIN PROJECT_MEMBER PM
+                ON PM.PROJECT_ID = P.PROJECT_ID
+        WHERE PM.MEMBER_ID = #{memberId}
+          AND P.DELETED_AT IS NULL
+
+        <include refid="projectSearchConditions"/>
+
+    </select>
+
+</mapper>

@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.or.oti.minipm.mapper.MyPageMapper">
+
+    <!-- 로그인 회원의 마이페이지 대시보드 요약 통계 -->
+    <select id="selectDashboardSummary"
+	        resultType="kr.or.oti.minipm.dto.MyDashboardSummaryDTO">
+	
+	    WITH PROJECT_STATS AS (
+	        SELECT COUNT(*) AS PARTICIPATING_PROJECT_COUNT,
+	               COUNT(
+	                   CASE
+	                       WHEN PM.ROLE = 'ADMIN' THEN 1
+	                   END
+	               ) AS MANAGED_PROJECT_COUNT
+	        FROM PROJECT_MEMBER PM
+	        INNER JOIN PROJECT P
+	                ON P.PROJECT_ID = PM.PROJECT_ID
+	        WHERE PM.MEMBER_ID = #{memberId}
+	          AND P.DELETED_AT IS NULL
+	    ),
+	    ISSUE_STATS AS (
+	        SELECT COUNT(*) AS ASSIGNED_ISSUE_COUNT,
+	               COUNT(
+	                   CASE
+	                       WHEN I.STATUS = 'TODO' THEN 1
+	                   END
+	               ) AS TODO_ISSUE_COUNT,
+	               COUNT(
+	                   CASE
+	                       WHEN I.STATUS = 'IN_PROGRESS' THEN 1
+	                   END
+	               ) AS IN_PROGRESS_ISSUE_COUNT,
+	               COUNT(
+	                   CASE
+	                       WHEN I.STATUS = 'DONE' THEN 1
+	                   END
+	               ) AS DONE_ISSUE_COUNT,
+	               COUNT(
+	                   CASE
+	                       WHEN I.STATUS IN ('TODO', 'IN_PROGRESS')
+	                        AND I.PRIORITY = 'HIGH'
+	                       THEN 1
+	                   END
+	               ) AS HIGH_PRIORITY_OPEN_ISSUE_COUNT,
+	               COUNT(
+	                   CASE
+	                       WHEN I.STATUS IN ('TODO', 'IN_PROGRESS')
+	                        AND I.PRIORITY = 'MEDIUM'
+	                       THEN 1
+	                   END
+	               ) AS MEDIUM_PRIORITY_OPEN_ISSUE_COUNT,
+	               COUNT(
+	                   CASE
+	                       WHEN I.STATUS IN ('TODO', 'IN_PROGRESS')
+	                        AND I.PRIORITY = 'LOW'
+	                       THEN 1
+	                   END
+	               ) AS LOW_PRIORITY_OPEN_ISSUE_COUNT
+	        FROM ISSUE I
+	        INNER JOIN PROJECT P
+	                ON P.PROJECT_ID = I.PROJECT_ID
+	        INNER JOIN PROJECT_MEMBER PM
+	                ON PM.PROJECT_ID = I.PROJECT_ID
+	               AND PM.MEMBER_ID = #{memberId}
+	        WHERE I.ASSIGNEE_ID = #{memberId}
+	          AND I.DELETED_AT IS NULL
+	          AND P.DELETED_AT IS NULL
+	    )
+	    SELECT PROJECT_STATS.PARTICIPATING_PROJECT_COUNT,
+	           PROJECT_STATS.MANAGED_PROJECT_COUNT,
+	           ISSUE_STATS.ASSIGNED_ISSUE_COUNT,
+	           ISSUE_STATS.TODO_ISSUE_COUNT,
+	           ISSUE_STATS.IN_PROGRESS_ISSUE_COUNT,
+	           ISSUE_STATS.DONE_ISSUE_COUNT,
+	           ISSUE_STATS.HIGH_PRIORITY_OPEN_ISSUE_COUNT,
+	           ISSUE_STATS.MEDIUM_PRIORITY_OPEN_ISSUE_COUNT,
+	           ISSUE_STATS.LOW_PRIORITY_OPEN_ISSUE_COUNT
+	    FROM PROJECT_STATS
+	    CROSS JOIN ISSUE_STATS
+	
+	</select>
+	
+	<!-- 로그인 회원이 ADMIN인 프로젝트의 전체 통계 -->
+    <select id="selectManagedDashboardSummary"
+            resultType="kr.or.oti.minipm.dto.ManagedDashboardSummaryDTO">
+
+        WITH MANAGED_PROJECTS AS (
+            SELECT P.PROJECT_ID
+            FROM PROJECT P
+            INNER JOIN PROJECT_MEMBER PM
+                    ON PM.PROJECT_ID = P.PROJECT_ID
+            WHERE PM.MEMBER_ID = #{memberId}
+              AND PM.ROLE = 'ADMIN'
+              AND P.DELETED_AT IS NULL
+        )
+        SELECT COUNT(
+                   DISTINCT MANAGED_PROJECTS.PROJECT_ID
+               ) AS MANAGED_PROJECT_COUNT,
+               COUNT(
+                   I.ISSUE_ID
+               ) AS TOTAL_ISSUE_COUNT,
+               COUNT(
+                   CASE
+                       WHEN I.STATUS IN (
+                           'TODO',
+                           'IN_PROGRESS'
+                       )
+                       THEN 1
+                   END
+               ) AS OPEN_ISSUE_COUNT,
+               COUNT(
+                   CASE
+                       WHEN I.STATUS = 'DONE'
+                       THEN 1
+                   END
+               ) AS DONE_ISSUE_COUNT,
+               COUNT(
+                   CASE
+                       WHEN I.ISSUE_ID IS NOT NULL
+                        AND I.ASSIGNEE_ID IS NULL
+                       THEN 1
+                   END
+               ) AS UNASSIGNED_ISSUE_COUNT
+        FROM MANAGED_PROJECTS
+        LEFT JOIN ISSUE I
+               ON I.PROJECT_ID =
+                  MANAGED_PROJECTS.PROJECT_ID
+              AND I.DELETED_AT IS NULL
+
+    </select>
+    
+    <!-- 로그인 회원이 ADMIN인 프로젝트별 통계 목록 -->
+	<select id="selectManagedProjectSummaries"
+	        resultType="kr.or.oti.minipm.dto.ManagedProjectSummaryDTO">
+	
+	    WITH MANAGED_PROJECTS AS (
+	        SELECT P.PROJECT_ID,
+	               P.NAME AS PROJECT_NAME
+	        FROM PROJECT P
+	        INNER JOIN PROJECT_MEMBER ADMIN_PM
+	                ON ADMIN_PM.PROJECT_ID = P.PROJECT_ID
+	        WHERE ADMIN_PM.MEMBER_ID = #{memberId}
+	          AND ADMIN_PM.ROLE = 'ADMIN'
+	          AND P.DELETED_AT IS NULL
+	    ),
+	    MEMBER_STATS AS (
+	        SELECT PM.PROJECT_ID,
+	               COUNT(*) AS MEMBER_COUNT
+	        FROM PROJECT_MEMBER PM
+	        INNER JOIN MANAGED_PROJECTS MP
+	                ON MP.PROJECT_ID = PM.PROJECT_ID
+	        GROUP BY PM.PROJECT_ID
+	    ),
+	    ISSUE_STATS AS (
+	        SELECT I.PROJECT_ID,
+	               COUNT(*) AS TOTAL_ISSUE_COUNT,
+	               COUNT(
+	                   CASE
+	                       WHEN I.STATUS = 'TODO'
+	                       THEN 1
+	                   END
+	               ) AS TODO_ISSUE_COUNT,
+	               COUNT(
+	                   CASE
+	                       WHEN I.STATUS = 'IN_PROGRESS'
+	                       THEN 1
+	                   END
+	               ) AS IN_PROGRESS_ISSUE_COUNT,
+	               COUNT(
+	                   CASE
+	                       WHEN I.STATUS = 'DONE'
+	                       THEN 1
+	                   END
+	               ) AS DONE_ISSUE_COUNT,
+	               COUNT(
+	                   CASE
+	                       WHEN I.ASSIGNEE_ID IS NULL
+	                       THEN 1
+	                   END
+	               ) AS UNASSIGNED_ISSUE_COUNT
+	        FROM ISSUE I
+	        INNER JOIN MANAGED_PROJECTS MP
+	                ON MP.PROJECT_ID = I.PROJECT_ID
+	        WHERE I.DELETED_AT IS NULL
+	        GROUP BY I.PROJECT_ID
+	    )
+	    SELECT MP.PROJECT_ID,
+	           MP.PROJECT_NAME,
+	           NVL(
+	               MS.MEMBER_COUNT,
+	               0
+	           ) AS MEMBER_COUNT,
+	           NVL(
+	               IST.TOTAL_ISSUE_COUNT,
+	               0
+	           ) AS TOTAL_ISSUE_COUNT,
+	           NVL(
+	               IST.TODO_ISSUE_COUNT,
+	               0
+	           ) AS TODO_ISSUE_COUNT,
+	           NVL(
+	               IST.IN_PROGRESS_ISSUE_COUNT,
+	               0
+	           ) AS IN_PROGRESS_ISSUE_COUNT,
+	           NVL(
+	               IST.DONE_ISSUE_COUNT,
+	               0
+	           ) AS DONE_ISSUE_COUNT,
+	           NVL(
+	               IST.UNASSIGNED_ISSUE_COUNT,
+	               0
+	           ) AS UNASSIGNED_ISSUE_COUNT
+	    FROM MANAGED_PROJECTS MP
+	    LEFT JOIN MEMBER_STATS MS
+	           ON MS.PROJECT_ID = MP.PROJECT_ID
+	    LEFT JOIN ISSUE_STATS IST
+	           ON IST.PROJECT_ID = MP.PROJECT_ID
+	    ORDER BY MP.PROJECT_ID DESC
+	
+	</select>
+
+</mapper>

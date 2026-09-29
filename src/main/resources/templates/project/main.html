@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/common :: head('내 프로젝트')}"></head>
+
+<body>
+
+<header th:replace="~{fragments/common :: header}"></header>
+<th:block th:replace="~{fragments/common :: sidebar('projects')}"></th:block>
+
+<main class="app-main">
+    <div class="content-wrap">
+
+        <div class="page-heading">
+            <div>
+                <h1 class="page-title">내 프로젝트</h1>
+                <p class="page-description">
+                    참여하고 있는 프로젝트를 확인하고 관리합니다.
+                </p>
+            </div>
+
+            <a th:href="@{/project/create}"
+               class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>
+                새 프로젝트 생성
+            </a>
+        </div>
+
+        <th:block th:replace="~{fragments/common :: alerts}"></th:block>
+
+        <section class="surface-card search-card">
+            <div class="surface-card-body">
+                <form th:action="@{/project}"
+                      th:object="${projectSearchDTO}"
+                      method="get">
+
+                    <input type="hidden"
+                           name="page"
+                           value="1">
+
+                    <input type="hidden"
+                           name="size"
+                           th:value="${pageResponse.size}">
+
+                    <div class="row g-2 align-items-start">
+                        <div class="col-12 col-md">
+                            <label for="project-keyword"
+                                   class="visually-hidden">
+                                프로젝트 검색
+                            </label>
+
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="bi bi-search text-secondary"></i>
+                                </span>
+
+                                <input type="search"
+                                       id="project-keyword"
+                                       th:field="*{keyword}"
+                                       class="form-control border-start-0"
+                                       th:classappend="${#fields.hasErrors('keyword')} ? ' is-invalid' : ''"
+                                       maxlength="100"
+                                       placeholder="프로젝트 이름 또는 설명을 검색하세요.">
+                            </div>
+
+                            <p th:if="${#fields.hasErrors('keyword')}"
+                               th:errors="*{keyword}"
+                               class="field-error">
+                                검색어 오류
+                            </p>
+                        </div>
+
+                        <div class="col-6 col-md-auto">
+                            <button type="submit"
+                                    class="btn btn-primary w-100 px-md-4">
+                                검색
+                            </button>
+                        </div>
+
+                        <div class="col-6 col-md-auto">
+                            <a th:href="@{/project}"
+                               class="btn btn-outline-secondary w-100 px-md-4">
+                                초기화
+                            </a>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="result-count mt-3">
+                    검색 결과
+                    <strong th:text="${pageResponse.total}">0</strong>개
+                </div>
+            </div>
+        </section>
+
+        <section th:if="${#lists.isEmpty(projects)}"
+                 class="surface-card empty-state">
+            <div class="empty-icon">
+                <i class="bi bi-folder2-open"></i>
+            </div>
+
+            <h2 class="empty-title">조건에 맞는 프로젝트가 없습니다.</h2>
+            <p class="empty-description">
+                검색 조건을 바꾸거나 새 프로젝트를 만들어보세요.
+            </p>
+        </section>
+
+        <section th:unless="${#lists.isEmpty(projects)}">
+            <div class="row g-4">
+                <div th:each="project : ${projects}"
+                     class="col-12 col-md-6 col-xl-4">
+
+                    <article class="surface-card project-card">
+                        <a th:href="@{/project/{projectId}(projectId=${project.projectId})}"
+                           class="project-card-link">
+
+                            <div class="project-icon">
+                                <i class="bi bi-folder2"></i>
+                            </div>
+
+                            <h2 th:text="${project.name}"
+                                class="project-name">
+                                프로젝트 이름
+                            </h2>
+
+                            <p th:text="${project.description != null and !#strings.isEmpty(project.description)
+                                ? project.description
+                                : '등록된 설명이 없습니다.'}"
+                               class="project-description">
+                                프로젝트 설명
+                            </p>
+
+                            <div class="meta-row">
+                                <span>
+                                    <i class="bi bi-hash"></i>
+                                    <span th:text="${project.projectId}">0</span>
+                                </span>
+
+                                <span th:text="${project.createdAt != null
+                                    ? #temporals.format(project.createdAt, 'yyyy-MM-dd')
+                                    : '-'}">
+                                    생성일
+                                </span>
+                            </div>
+                        </a>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <nav th:if="${pageResponse.total > 0
+                     and pageResponse.end >= pageResponse.start}"
+             class="mt-4"
+             aria-label="프로젝트 페이지">
+
+            <ul class="pagination justify-content-center mb-0">
+                <li th:if="${pageResponse.prev}"
+                    class="page-item">
+                    <a th:href="@{/project(
+                           page=${pageResponse.start - 1},
+                           size=${pageResponse.size},
+                           keyword=${projectSearchDTO.keyword}
+                       )}"
+                       class="page-link"
+                       aria-label="이전 페이지 묶음">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+
+                <li th:each="pageNumber : ${#numbers.sequence(pageResponse.start, pageResponse.end)}"
+                    class="page-item"
+                    th:classappend="${pageNumber == pageResponse.page} ? ' active' : ''">
+                    <a th:href="@{/project(
+                           page=${pageNumber},
+                           size=${pageResponse.size},
+                           keyword=${projectSearchDTO.keyword}
+                       )}"
+                       th:text="${pageNumber}"
+                       class="page-link">
+                        1
+                    </a>
+                </li>
+
+                <li th:if="${pageResponse.next}"
+                    class="page-item">
+                    <a th:href="@{/project(
+                           page=${pageResponse.end + 1},
+                           size=${pageResponse.size},
+                           keyword=${projectSearchDTO.keyword}
+                       )}"
+                       class="page-link"
+                       aria-label="다음 페이지 묶음">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/common :: scripts}"></th:block>
+
+</body>
+</html>

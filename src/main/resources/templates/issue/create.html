@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('이슈 등록')}"></head>
+<body>
+<header th:replace="~{fragments/common :: header}"></header>
+<aside th:replace="~{fragments/common :: sidebar('projects')}"></aside>
+
+<main class="app-main">
+    <div class="container-fluid px-0 form-page-wrap">
+        <nav class="page-breadcrumb" aria-label="breadcrumb">
+            <a th:href="@{/project}">프로젝트</a><i class="bi bi-chevron-right"></i>
+            <a th:href="@{/project/{projectId}/issues(projectId=${project.projectId})}" th:text="${project.name}">프로젝트</a>
+            <i class="bi bi-chevron-right"></i><span>새 이슈</span>
+        </nav>
+
+        <div class="page-heading">
+            <div><p class="page-eyebrow">NEW ISSUE</p><h1>새 이슈 등록</h1>
+                <p>작업 내용을 명확하게 기록하고 담당자를 지정하세요.</p></div>
+        </div>
+
+        <section class="surface-card form-card">
+            <form th:action="@{/project/{projectId}/issues/create(projectId=${project.projectId})}"
+                  th:object="${issueCreateDTO}" method="post">
+                <div class="mb-4">
+                    <label for="title" class="form-label">이슈 제목 <span class="required-mark">*</span></label>
+                    <input type="text" id="title" th:field="*{title}" maxlength="200" class="form-control"
+                           th:classappend="${#fields.hasErrors('title')} ? ' is-invalid' : ''" placeholder="해야 할 작업을 간단히 입력하세요">
+                    <div th:if="${#fields.hasErrors('title')}" th:errors="*{title}" class="invalid-feedback">제목 오류</div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="content" class="form-label">이슈 내용</label>
+                    <textarea id="content" th:field="*{content}" rows="8" class="form-control"
+                              th:classappend="${#fields.hasErrors('content')} ? ' is-invalid' : ''"
+                              placeholder="작업 배경과 완료 조건을 자세히 입력하세요"></textarea>
+                    <div th:if="${#fields.hasErrors('content')}" th:errors="*{content}" class="invalid-feedback">내용 오류</div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-4">
+                        <label for="issueType" class="form-label">유형 <span class="required-mark">*</span></label>
+                        <select id="issueType" th:field="*{issueType}" class="form-select"
+                                th:classappend="${#fields.hasErrors('issueType')} ? ' is-invalid' : ''">
+                            <option value="">선택하세요</option><option value="FEATURE">기능</option>
+                            <option value="BUG">버그</option><option value="TASK">작업</option><option value="IMPROVEMENT">개선</option>
+                        </select>
+                        <div th:if="${#fields.hasErrors('issueType')}" th:errors="*{issueType}" class="invalid-feedback">유형 오류</div>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label for="priority" class="form-label">우선순위 <span class="required-mark">*</span></label>
+                        <select id="priority" th:field="*{priority}" class="form-select"
+                                th:classappend="${#fields.hasErrors('priority')} ? ' is-invalid' : ''">
+                            <option value="">선택하세요</option><option value="HIGH">높음</option>
+                            <option value="MEDIUM">보통</option><option value="LOW">낮음</option>
+                        </select>
+                        <div th:if="${#fields.hasErrors('priority')}" th:errors="*{priority}" class="invalid-feedback">우선순위 오류</div>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label for="assigneeId" class="form-label">담당자</label>
+                        <select id="assigneeId" th:field="*{assigneeId}" class="form-select"
+                                th:classappend="${#fields.hasErrors('assigneeId')} ? ' is-invalid' : ''">
+                            <option value="">미지정</option>
+                            <option th:each="member : ${members}" th:value="${member.memberId}"
+                                    th:text="|${member.name} (${member.loginId})|">담당자</option>
+                        </select>
+                        <div th:if="${#fields.hasErrors('assigneeId')}" th:errors="*{assigneeId}" class="invalid-feedback">담당자 오류</div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <a th:href="@{/project/{projectId}/issues(projectId=${project.projectId})}" class="btn btn-outline-secondary">취소</a>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> 이슈 등록</button>
+                </div>
+            </form>
+        </section>
+    </div>
+</main>
+<th:block th:replace="~{fragments/common :: scripts}"></th:block>
+</body>
+</html>

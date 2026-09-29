@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.or.oti.minipm.mapper.MemberMapper">
+
+    <select id="countMembers" resultType="int">
+        SELECT COUNT(*)
+        FROM MEMBER
+    </select>
+
+    <insert id="insertMember"
+	        parameterType="kr.or.oti.minipm.vo.MemberVO">
+	
+	    <selectKey keyProperty="memberId"
+	               resultType="long"
+	               order="BEFORE">
+	
+	        SELECT SEQ_MEMBER.NEXTVAL
+	        FROM DUAL
+	
+	    </selectKey>
+	
+	    INSERT INTO MEMBER (
+	        MEMBER_ID,
+	        LOGIN_ID,
+	        PASSWORD,
+	        NAME,
+	        EMAIL,
+	        OAUTH_PROVIDER,
+	        OAUTH_ID
+	    ) VALUES (
+	        #{memberId},
+	        #{loginId},
+	        #{password},
+	        #{name},
+	        #{email},
+	        #{oauthProvider},
+	        #{oauthId}
+	    )
+	
+	</insert>
+	
+	<select id="selectMemberByLoginId"
+	        resultType="kr.or.oti.minipm.vo.MemberVO">
+	
+	    SELECT MEMBER_ID,
+	           LOGIN_ID,
+	           PASSWORD,
+	           NAME,
+	           EMAIL,
+	           OAUTH_PROVIDER,
+	           OAUTH_ID,
+	           CREATED_AT,
+	           UPDATED_AT
+	    FROM MEMBER
+	    WHERE LOGIN_ID = #{loginId}
+	
+	</select>
+	
+	<!-- 정확한 이메일로 회원 조회 -->
+	<select id="selectMemberByEmail"
+	        resultType="kr.or.oti.minipm.vo.MemberVO">
+	
+	    SELECT MEMBER_ID,
+	           LOGIN_ID,
+	           PASSWORD,
+	           NAME,
+	           EMAIL,
+	           OAUTH_PROVIDER,
+	           OAUTH_ID,
+	           CREATED_AT,
+	           UPDATED_AT
+	    FROM MEMBER
+	    WHERE EMAIL = #{email}
+	
+	</select>
+	
+	<!-- OAuth 제공자와 고유번호로 회원 조회 -->
+	<select id="selectMemberByOAuth"
+	        resultType="kr.or.oti.minipm.vo.MemberVO">
+	
+	    SELECT MEMBER_ID,
+	           LOGIN_ID,
+	           PASSWORD,
+	           NAME,
+	           EMAIL,
+	           OAUTH_PROVIDER,
+	           OAUTH_ID,
+	           CREATED_AT,
+	           UPDATED_AT
+	    FROM MEMBER
+	    WHERE OAUTH_PROVIDER = #{oauthProvider}
+	      AND OAUTH_ID = #{oauthId}
+	
+	</select>
+	
+	<!-- 기존 일반 회원에게 OAuth 계정 연결 -->
+	<update id="updateMemberOAuth">
+	
+	    UPDATE MEMBER
+	    SET OAUTH_PROVIDER = #{oauthProvider},
+	        OAUTH_ID = #{oauthId},
+	        UPDATED_AT = SYSTIMESTAMP
+	    WHERE MEMBER_ID = #{memberId}
+	      AND OAUTH_PROVIDER IS NULL
+	      AND OAUTH_ID IS NULL
+	
+	</update>
+	
+	<!-- 회원번호로 회원 조회 -->
+    <select id="selectMemberById"
+            resultType="kr.or.oti.minipm.vo.MemberVO">
+
+        SELECT MEMBER_ID,
+               LOGIN_ID,
+               PASSWORD,
+               NAME,
+               EMAIL,
+               OAUTH_PROVIDER,
+               OAUTH_ID,
+               CREATED_AT,
+               UPDATED_AT
+        FROM MEMBER
+        WHERE MEMBER_ID = #{memberId}
+
+    </select>
+    
+</mapper>

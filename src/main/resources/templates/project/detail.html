@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/common :: head('프로젝트 상세')}"></head>
+
+<body>
+
+<header th:replace="~{fragments/common :: header}"></header>
+<th:block th:replace="~{fragments/common :: sidebar('projects')}"></th:block>
+
+<main class="app-main">
+    <div class="content-wrap">
+
+        <nav class="breadcrumb-wrap" aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a th:href="@{/project}">내 프로젝트</a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">
+                    프로젝트 상세
+                </li>
+            </ol>
+        </nav>
+
+        <th:block th:replace="~{fragments/common :: alerts}"></th:block>
+
+        <section class="surface-card detail-hero mb-4">
+            <div class="d-flex flex-column flex-md-row align-items-md-start justify-content-between gap-4">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="detail-icon">
+                        <i class="bi bi-folder2-open"></i>
+                    </div>
+
+                    <div>
+                        <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+                            <h1 th:text="${project.name}"
+                                class="page-title mb-0">
+                                프로젝트 이름
+                            </h1>
+
+                            <span th:if="${isAdmin}"
+                                  class="neutral-badge role-badge-admin">
+                                ADMIN
+                            </span>
+
+                            <span th:unless="${isAdmin}"
+                                  class="neutral-badge">
+                                MEMBER
+                            </span>
+                        </div>
+
+                        <p th:text="${project.description != null and !#strings.isEmpty(project.description)
+                            ? project.description
+                            : '등록된 프로젝트 설명이 없습니다.'}"
+                           class="page-description mb-0">
+                            프로젝트 설명
+                        </p>
+                    </div>
+                </div>
+
+                <div th:if="${isAdmin}"
+                     class="page-actions d-flex flex-wrap gap-2">
+                    <a th:href="@{/project/{projectId}/edit(projectId=${project.projectId})}"
+                       class="btn btn-outline-secondary">
+                        <i class="bi bi-pencil me-1"></i>
+                        프로젝트 수정
+                    </a>
+
+                    <form th:action="@{/project/{projectId}/delete(projectId=${project.projectId})}"
+                          method="post"
+                          onsubmit="return confirm('정말 이 프로젝트를 삭제하시겠습니까?');">
+                        <button type="submit"
+                                class="btn btn-outline-danger">
+                            <i class="bi bi-trash me-1"></i>
+                            프로젝트 삭제
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="info-grid mt-4">
+                <div class="info-item">
+                    <span class="info-label">프로젝트 번호</span>
+                    <span th:text="${project.projectId}"
+                          class="info-value">
+                        0
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="info-label">내 역할</span>
+                    <span th:text="${isAdmin ? 'ADMIN' : 'MEMBER'}"
+                          class="info-value">
+                        MEMBER
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="info-label">생성일</span>
+                    <span th:text="${project.createdAt != null
+                        ? #temporals.format(project.createdAt, 'yyyy-MM-dd HH:mm')
+                        : '-'}"
+                          class="info-value">
+                        생성일
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="info-label">수정일</span>
+                    <span th:text="${project.updatedAt != null
+                        ? #temporals.format(project.updatedAt, 'yyyy-MM-dd HH:mm')
+                        : '-'}"
+                          class="info-value">
+                        수정일
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <div class="row g-4">
+            <div class="col-12 col-md-6">
+                <a th:href="@{/project/{projectId}/issues(projectId=${project.projectId})}"
+                   class="surface-card d-flex align-items-center gap-3 p-4 text-decoration-none h-100">
+                    <div class="project-icon mb-0">
+                        <i class="bi bi-list-check"></i>
+                    </div>
+
+                    <div class="flex-grow-1">
+                        <h2 class="section-title">이슈 관리</h2>
+                        <p class="section-caption">
+                            프로젝트 이슈를 조회하고 작업 상태를 관리합니다.
+                        </p>
+                    </div>
+
+                    <i class="bi bi-chevron-right text-secondary"></i>
+                </a>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <a th:href="@{/project/{projectId}/members(projectId=${project.projectId})}"
+                   class="surface-card d-flex align-items-center gap-3 p-4 text-decoration-none h-100">
+                    <div class="project-icon mb-0">
+                        <i class="bi bi-people"></i>
+                    </div>
+
+                    <div class="flex-grow-1">
+                        <h2 class="section-title">멤버 관리</h2>
+                        <p class="section-caption">
+                            프로젝트 참여자와 역할을 확인합니다.
+                        </p>
+                    </div>
+
+                    <i class="bi bi-chevron-right text-secondary"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/common :: scripts}"></th:block>
+
+</body>
+</html>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head th:fragment="head(pageTitle)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- JavaScript의 데이터 변경 요청에 사용할 CSRF 정보 -->
+    <meta name="_csrf"
+          th:content="${_csrf.token}">
+
+    <meta name="_csrf_header"
+          th:content="${_csrf.headerName}">
+
+    <title th:text="${pageTitle + ' | MiniPM'}">MiniPM</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+          rel="stylesheet">
+
+    <link th:href="@{/css/issueflow.css}"
+          rel="stylesheet">
+</head>
+
+<body>
+
+<header th:fragment="header"
+        class="app-header">
+
+    <div class="app-header-inner">
+
+        <div class="d-flex align-items-center gap-2">
+            <button type="button"
+                    class="mobile-menu-button d-lg-none"
+                    data-bs-toggle="offcanvas"
+                    data-bs-target="#mobileSidebar"
+                    aria-controls="mobileSidebar"
+                    aria-label="메뉴 열기">
+                <i class="bi bi-list fs-5"></i>
+            </button>
+
+            <a th:href="@{/project}"
+               class="app-brand">
+                <span class="brand-mark">
+                    <i class="bi bi-kanban"></i>
+                </span>
+
+                <span>MiniPM</span>
+            </a>
+        </div>
+
+        <div class="header-actions">
+            <div class="dropdown notification-dropdown">
+
+                <button type="button"
+                        id="notificationButton"
+                        class="header-icon-button position-relative"
+                        data-bs-toggle="dropdown"
+                        data-bs-auto-close="outside"
+                        aria-expanded="false"
+                        aria-label="알림 열기">
+
+                    <i class="bi bi-bell"></i>
+
+                    <span id="notificationBadge"
+                          class="notification-badge d-none">
+                        0
+                    </span>
+                </button>
+
+                <div class="dropdown-menu dropdown-menu-end notification-menu"
+                     aria-labelledby="notificationButton">
+
+                    <div class="notification-menu-header">
+                        <div>
+                            <h2>알림</h2>
+
+                            <p id="notificationSummary">
+                                새로운 알림을 확인하세요.
+                            </p>
+                        </div>
+
+                        <button type="button"
+                                id="readAllNotificationButton"
+                                class="notification-read-all-button">
+                            모두 읽음
+                        </button>
+                    </div>
+
+                    <div id="notificationList"
+                         class="notification-list">
+
+                        <div class="notification-loading">
+                            <span class="spinner-border spinner-border-sm"
+                                  aria-hidden="true">
+                            </span>
+
+                            <span>알림을 불러오는 중입니다.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="user-chip">
+                <span class="user-avatar">
+                    <i class="bi bi-person"></i>
+                </span>
+
+                <span class="user-chip-label"
+                      th:text="${#httpServletRequest.remoteUser}">
+                    로그인 사용자
+                </span>
+            </div>
+
+            <form th:action="@{/member/logout}"
+                  method="post"
+                  class="m-0">
+                <button type="submit"
+                        class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-box-arrow-right me-sm-1"></i>
+                    <span class="header-logout-label">로그아웃</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</header>
+
+<th:block th:fragment="sidebar(activeMenu)">
+
+    <aside class="desktop-sidebar d-none d-lg-block">
+
+    <p class="sidebar-label">My Page</p>
+
+    <nav aria-label="마이페이지 메뉴">
+        <a th:href="@{/mypage/dashboard}"
+           class="sidebar-link"
+           th:classappend="${activeMenu == 'dashboard'}
+               ? ' active'
+               : ''">
+            <i class="bi bi-grid"></i>
+            <span>대시보드</span>
+        </a>
+
+        <a th:href="@{/mypage/profile}"
+		   class="sidebar-link"
+		   th:classappend="${activeMenu == 'profile'}
+		       ? ' active'
+		       : ''">
+		    <i class="bi bi-person-circle"></i>
+		    <span>내 정보</span>
+		</a>
+    </nav>
+
+    <p class="sidebar-label mt-4">Workspace</p>
+
+        <div class="sidebar-footer">
+            <div class="fw-semibold text-light mb-1">MiniPM</div>
+            <div>프로젝트와 이슈를 한곳에서 관리합니다.</div>
+        </div>
+    </aside>
+
+    <div class="offcanvas offcanvas-start app-offcanvas"
+         tabindex="-1"
+         id="mobileSidebar"
+         aria-labelledby="mobileSidebarLabel">
+
+        <div class="offcanvas-header border-bottom border-secondary">
+            <h2 class="offcanvas-title fs-5"
+                id="mobileSidebarLabel">
+                MiniPM
+            </h2>
+
+            <button type="button"
+                    class="btn-close btn-close-white"
+                    data-bs-dismiss="offcanvas"
+                    aria-label="메뉴 닫기">
+            </button>
+        </div>
+
+        <div class="offcanvas-body">
+            <p class="sidebar-label">Workspace</p>
+
+            <nav aria-label="모바일 주요 메뉴">
+                <a th:href="@{/project}"
+                   class="sidebar-link"
+                   th:classappend="${activeMenu == 'projects'} ? ' active' : ''">
+                    <i class="bi bi-folder2-open"></i>
+                    <span>내 프로젝트</span>
+                </a>
+
+                <a th:href="@{/project/create}"
+                   class="sidebar-link"
+                   th:classappend="${activeMenu == 'create'} ? ' active' : ''">
+                    <i class="bi bi-plus-circle"></i>
+                    <span>새 프로젝트 생성</span>
+                </a>
+            </nav>
+        </div>
+    </div>
+</th:block>
+
+<th:block th:fragment="alerts">
+    <div th:if="${message}"
+         class="app-alert app-alert-success"
+         role="status">
+        <i class="bi bi-check-circle-fill"></i>
+        <span th:text="${message}">처리가 완료되었습니다.</span>
+    </div>
+
+    <div th:if="${errorMessage}"
+         class="app-alert app-alert-danger"
+         role="alert">
+        <i class="bi bi-exclamation-circle-fill"></i>
+        <span th:text="${errorMessage}">처리 중 오류가 발생했습니다.</span>
+    </div>
+</th:block>
+
+<th:block th:fragment="scripts">
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+    </script>
+
+    <!-- WebSocket 연결을 지원하는 SockJS -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js">
+    </script>
+
+    <!-- WebSocket에서 STOMP 메시지 규칙을 사용하기 위한 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js">
+    </script>
+
+    <!-- IssueFlow 알림 처리 JavaScript -->
+    <script th:src="@{/js/notification.js}">
+    </script>
+
+</th:block>
+
+</body>
+</html>

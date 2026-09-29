@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.or.oti.minipm.mapper.IssueCommentMapper">
+
+    <!-- 댓글 등록 -->
+    <insert id="insertComment"
+            parameterType="kr.or.oti.minipm.vo.IssueCommentVO">
+
+        <selectKey keyProperty="commentId"
+                   resultType="long"
+                   order="BEFORE">
+            SELECT SEQ_ISSUE_COMMENT.NEXTVAL
+            FROM DUAL
+        </selectKey>
+
+        INSERT INTO ISSUE_COMMENT (
+            COMMENT_ID,
+            ISSUE_ID,
+            MEMBER_ID,
+            CONTENT,
+            CREATED_AT,
+            UPDATED_AT
+        ) VALUES (
+            #{commentId},
+            #{issueId},
+            #{memberId},
+            #{content, jdbcType=CLOB},
+            SYSTIMESTAMP,
+            SYSTIMESTAMP
+        )
+
+    </insert>
+
+	<!-- 특정 이슈의 미삭제 댓글과 작성자 정보 조회 -->
+    <select id="selectCommentsByIssueId"
+            resultType="kr.or.oti.minipm.vo.IssueCommentVO">
+
+        SELECT C.COMMENT_ID,
+               C.ISSUE_ID,
+               C.MEMBER_ID,
+               M.NAME AS MEMBER_NAME,
+               M.LOGIN_ID AS MEMBER_LOGIN_ID,
+               C.CONTENT,
+               C.CREATED_AT,
+               C.UPDATED_AT,
+               C.DELETED_AT,
+               C.DELETED_BY
+        FROM ISSUE_COMMENT C
+        INNER JOIN MEMBER M
+                ON M.MEMBER_ID = C.MEMBER_ID
+        WHERE C.ISSUE_ID = #{issueId}
+          AND C.DELETED_AT IS NULL
+        ORDER BY C.CREATED_AT ASC,
+                 C.COMMENT_ID ASC
+
+    </select>
+    
+        <!-- 해당 이슈에 속한 미삭제 댓글 단건 조회 -->
+    <select id="selectCommentByIdAndIssueId"
+            resultType="kr.or.oti.minipm.vo.IssueCommentVO">
+
+        SELECT COMMENT_ID,
+               ISSUE_ID,
+               MEMBER_ID,
+               CONTENT,
+               CREATED_AT,
+               UPDATED_AT,
+               DELETED_AT,
+               DELETED_BY
+        FROM ISSUE_COMMENT
+        WHERE COMMENT_ID = #{commentId}
+          AND ISSUE_ID = #{issueId}
+          AND DELETED_AT IS NULL
+
+    </select>
+
+    <!-- 작성자 본인의 미삭제 댓글 수정 -->
+    <update id="updateComment"
+            parameterType="kr.or.oti.minipm.vo.IssueCommentVO">
+
+        UPDATE ISSUE_COMMENT
+        SET CONTENT = #{content, jdbcType=CLOB},
+            UPDATED_AT = SYSTIMESTAMP
+        WHERE COMMENT_ID = #{commentId}
+          AND ISSUE_ID = #{issueId}
+          AND MEMBER_ID = #{memberId}
+          AND DELETED_AT IS NULL
+
+    </update>
+    
+    <!-- 작성자 또는 프로젝트 ADMIN의 댓글 논리 삭제 -->
+    <update id="softDeleteComment">
+
+        UPDATE ISSUE_COMMENT
+        SET DELETED_AT = SYSTIMESTAMP,
+            DELETED_BY = #{loginMemberId},
+            UPDATED_AT = SYSTIMESTAMP
+        WHERE COMMENT_ID = #{commentId}
+          AND ISSUE_ID = #{issueId}
+          AND DELETED_AT IS NULL
+          AND EXISTS (
+              SELECT 1
+              FROM ISSUE I
+              INNER JOIN PROJECT P ON P.PROJECT_ID = I.PROJECT_ID
+              INNER JOIN PROJECT_MEMBER PM ON PM.PROJECT_ID = P.PROJECT_ID
+              WHERE I.ISSUE_ID = ISSUE_COMMENT.ISSUE_ID
+                AND I.PROJECT_ID = #{projectId}
+                AND I.DELETED_AT IS NULL
+                AND P.DELETED_AT IS NULL
+                AND PM.MEMBER_ID = #{loginMemberId}
+                AND (
+                    ISSUE_COMMENT.MEMBER_ID = #{loginMemberId}
+                    OR PM.ROLE = 'ADMIN'
+                )
+          )
+
+    </update>
+
+</mapper>

@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/common :: head('마이페이지 대시보드')}"></head>
+
+<body>
+
+<header th:replace="~{fragments/common :: header}"></header>
+
+<th:block th:replace="~{fragments/common :: sidebar('dashboard')}">
+</th:block>
+
+<main class="app-main">
+    <div class="content-wrap">
+
+        <div class="page-heading">
+            <div>
+                <p class="page-eyebrow">MY DASHBOARD</p>
+
+                <h1 class="page-title">
+                    나의 작업 현황
+                </h1>
+
+                <p class="page-description">
+                    참여 중인 모든 프로젝트와 담당 이슈를 확인합니다.
+                </p>
+
+                <div class="dashboard-account-meta">
+                    <span class="dashboard-account-name">
+                        <i class="bi bi-person-circle"></i>
+                        <span th:text="${#httpServletRequest.userPrincipal.principal.memberName}">
+                            로그인 사용자
+                        </span>
+                    </span>
+
+                    <span th:if="${#httpServletRequest.userPrincipal.principal.oauthProvider == 'KAKAO'}"
+                          class="account-provider-badge account-provider-kakao">
+                        <i class="bi bi-chat-fill"></i>
+                        카카오 로그인
+                    </span>
+
+                    <span th:unless="${#httpServletRequest.userPrincipal.principal.oauthProvider == 'KAKAO'}"
+                          class="account-provider-badge account-provider-local">
+                        <i class="bi bi-person-check"></i>
+                        일반 로그인
+                    </span>
+                </div>
+            </div>
+
+            <a th:href="@{/project}"
+               class="btn btn-outline-secondary">
+                <i class="bi bi-folder2-open me-1"></i>
+                전체 프로젝트
+            </a>
+        </div>
+
+        <th:block th:replace="~{fragments/common :: alerts}">
+        </th:block>
+
+        <!-- ADMIN 프로젝트 전체 통계 -->
+        <section th:if="${managedSummary.managedProjectCount > 0}"
+                 class="surface-card mb-4">
+
+		<div class="surface-card-header">
+		    <div>
+		        <div class="d-flex align-items-center gap-2 mb-1">
+		            <h2 class="section-title">
+		                관리 프로젝트 전체 현황
+		            </h2>
+		
+		            <span class="neutral-badge role-badge-admin">
+		                ADMIN
+		            </span>
+		        </div>
+		
+		        <p class="section-caption">
+		            내가 관리자로 참여 중인 프로젝트의 전체 통계입니다.
+		        </p>
+		    </div>
+		
+		    <a th:href="@{/mypage/managed-projects}"
+		       class="btn btn-sm btn-outline-secondary">
+		
+		        프로젝트별 현황 보기
+		        <i class="bi bi-arrow-right ms-1"></i>
+		    </a>
+		</div>
+
+            <div class="surface-card-body">
+
+                <div class="row g-3">
+
+                    <!-- 관리 프로젝트 -->
+                    <div class="col-6 col-xl-3">
+                        <div class="p-3 border rounded-3 h-100">
+                            <div class="d-flex align-items-start justify-content-between gap-3">
+                                <div>
+                                    <p class="text-secondary small mb-2">
+                                        관리 프로젝트
+                                    </p>
+
+                                    <strong class="fs-4"
+                                            th:text="${managedSummary.managedProjectCount}">
+                                        0
+                                    </strong>
+                                </div>
+
+                                <i class="bi bi-shield-check text-secondary fs-4">
+                                </i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 전체 이슈 -->
+                    <div class="col-6 col-xl-3">
+                        <div class="p-3 border rounded-3 h-100">
+                            <div class="d-flex align-items-start justify-content-between gap-3">
+                                <div>
+                                    <p class="text-secondary small mb-2">
+                                        전체 이슈
+                                    </p>
+
+                                    <strong class="fs-4"
+                                            th:text="${managedSummary.totalIssueCount}">
+                                        0
+                                    </strong>
+                                </div>
+
+                                <i class="bi bi-collection text-secondary fs-4">
+                                </i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 진행할 이슈 -->
+                    <div class="col-6 col-xl-3">
+                        <div class="p-3 border rounded-3 h-100">
+                            <div class="d-flex align-items-start justify-content-between gap-3">
+                                <div>
+                                    <p class="text-secondary small mb-2">
+                                        진행할 이슈
+                                    </p>
+
+                                    <strong class="fs-4"
+                                            th:text="${managedSummary.openIssueCount}">
+                                        0
+                                    </strong>
+                                </div>
+
+                                <i class="bi bi-list-task text-secondary fs-4">
+                                </i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 담당자 미지정 -->
+                    <div class="col-6 col-xl-3">
+                        <div class="p-3 border rounded-3 h-100">
+                            <div class="d-flex align-items-start justify-content-between gap-3">
+                                <div>
+                                    <p class="text-secondary small mb-2">
+                                        담당자 미지정
+                                    </p>
+
+                                    <strong class="fs-4"
+                                            th:text="${managedSummary.unassignedIssueCount}">
+                                        0
+                                    </strong>
+                                </div>
+
+                                <i class="bi bi-person-x text-secondary fs-4">
+                                </i>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- 관리자 프로젝트 전체 완료율 -->
+                <div class="mt-4 pt-4 border-top">
+
+                    <div class="d-flex align-items-center justify-content-between gap-3 mb-2">
+                        <div>
+                            <strong class="d-block">
+                                관리 프로젝트 전체 완료율
+                            </strong>
+
+                            <span class="text-secondary small">
+                                완료
+                                <span th:text="${managedSummary.doneIssueCount}">
+                                    0
+                                </span>개 /
+                                전체
+                                <span th:text="${managedSummary.totalIssueCount}">
+                                    0
+                                </span>개
+                            </span>
+                        </div>
+
+                        <strong class="fs-5">
+                            <span th:text="${managedSummary.completionRate}">
+                                0.0
+                            </span>%
+                        </strong>
+                    </div>
+
+                    <div class="progress"
+                         role="progressbar"
+                         aria-label="관리 프로젝트 전체 완료율">
+
+                        <div class="progress-bar bg-dark"
+                             th:style="|width: ${managedSummary.completionRate}%|">
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 상단 요약 카드 -->
+        <section class="row g-3 mb-4">
+
+            <div class="col-6 col-xl-3">
+                <div class="surface-card h-100 p-4">
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div>
+                            <p class="text-secondary small mb-2">
+                                참여 프로젝트
+                            </p>
+
+                            <strong class="fs-3 text-dark"
+                                    th:text="${summary.participatingProjectCount}">
+                                0
+                            </strong>
+                        </div>
+
+                        <div class="project-icon mb-0">
+                            <i class="bi bi-folder2-open"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-xl-3">
+                <div class="surface-card h-100 p-4">
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div>
+                            <p class="text-secondary small mb-2">
+                                전체 담당 이슈
+                            </p>
+
+                            <strong class="fs-3 text-dark"
+                                    th:text="${summary.assignedIssueCount}">
+                                0
+                            </strong>
+                        </div>
+
+                        <div class="project-icon mb-0">
+                            <i class="bi bi-person-workspace"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-xl-3">
+                <div class="surface-card h-100 p-4">
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div>
+                            <p class="text-secondary small mb-2">
+                                진행 중인 이슈
+                            </p>
+
+                            <strong class="fs-3 text-dark"
+                                    th:text="${summary.todoIssueCount
+                                        + summary.inProgressIssueCount}">
+                                0
+                            </strong>
+                        </div>
+
+                        <div class="project-icon mb-0">
+                            <i class="bi bi-list-check"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-xl-3">
+                <div class="surface-card h-100 p-4">
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div>
+                            <p class="text-secondary small mb-2">
+                                완료율
+                            </p>
+
+                            <strong class="fs-3 text-dark">
+                                <span th:text="${summary.completionRate}">
+                                    0.0
+                                </span>%
+                            </strong>
+                        </div>
+
+                        <div class="project-icon mb-0">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- 담당 이슈 상태 현황 -->
+        <section class="surface-card">
+            <div class="surface-card-header">
+                <div>
+                    <h2 class="section-title">
+                        내 담당 이슈 상태
+                    </h2>
+
+                    <p class="section-caption">
+                        모든 참여 프로젝트에서 나에게 할당된 이슈입니다.
+                    </p>
+                </div>
+
+                <span class="result-count">
+                    총
+                    <strong th:text="${summary.assignedIssueCount}">
+                        0
+                    </strong>개
+                </span>
+            </div>
+
+            <div class="surface-card-body">
+
+                <div th:if="${summary.assignedIssueCount == 0}"
+                     class="empty-state">
+
+                    <div class="empty-icon">
+                        <i class="bi bi-check2-square"></i>
+                    </div>
+
+                    <h3 class="empty-title">
+                        담당 이슈가 없습니다.
+                    </h3>
+
+                    <p class="empty-description">
+                        프로젝트에서 이슈를 할당받으면 이곳에 표시됩니다.
+                    </p>
+                </div>
+
+                <div th:unless="${summary.assignedIssueCount == 0}"
+                     class="row g-4">
+
+                    <!-- TODO -->
+                    <div class="col-12 col-md-4">
+                        <div class="p-3 border rounded-3 h-100">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <span class="neutral-badge">
+                                    TODO
+                                </span>
+
+                                <strong class="fs-4"
+                                        th:text="${summary.todoIssueCount}">
+                                    0
+                                </strong>
+                            </div>
+
+                            <div class="progress"
+                                 role="progressbar"
+                                 aria-label="할 일 이슈 비율">
+
+                                <div class="progress-bar bg-secondary"
+                                     th:style="|width: ${
+                                         summary.todoIssueCount
+                                         * 100.0
+                                         / summary.assignedIssueCount
+                                     }%|">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- IN_PROGRESS -->
+                    <div class="col-12 col-md-4">
+                        <div class="p-3 border rounded-3 h-100">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <span class="neutral-badge status-progress">
+                                    IN_PROGRESS
+                                </span>
+
+                                <strong class="fs-4"
+                                        th:text="${summary.inProgressIssueCount}">
+                                    0
+                                </strong>
+                            </div>
+
+                            <div class="progress"
+                                 role="progressbar"
+                                 aria-label="진행 중 이슈 비율">
+
+                                <div class="progress-bar bg-secondary"
+                                     th:style="|width: ${
+                                         summary.inProgressIssueCount
+                                         * 100.0
+                                         / summary.assignedIssueCount
+                                     }%|">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DONE -->
+                    <div class="col-12 col-md-4">
+                        <div class="p-3 border rounded-3 h-100">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <span class="neutral-badge status-done">
+                                    DONE
+                                </span>
+
+                                <strong class="fs-4"
+                                        th:text="${summary.doneIssueCount}">
+                                    0
+                                </strong>
+                            </div>
+
+                            <div class="progress"
+                                 role="progressbar"
+                                 aria-label="완료 이슈 비율">
+
+                                <div class="progress-bar bg-dark"
+                                     th:style="|width: ${
+                                         summary.doneIssueCount
+                                         * 100.0
+                                         / summary.assignedIssueCount
+                                     }%|">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 미완료 담당 이슈 우선순위 -->
+        <section class="surface-card mt-4">
+            <div class="surface-card-header">
+                <div>
+                    <h2 class="section-title">
+                        처리할 이슈 우선순위
+                    </h2>
+
+                    <p class="section-caption">
+                        아직 완료되지 않은 내 담당 이슈의 우선순위입니다.
+                    </p>
+                </div>
+
+                <span class="result-count">
+                    총
+                    <strong th:text="${summary.todoIssueCount
+                        + summary.inProgressIssueCount}">
+                        0
+                    </strong>개
+                </span>
+            </div>
+
+            <div class="surface-card-body">
+
+                <div th:if="${summary.todoIssueCount
+                    + summary.inProgressIssueCount == 0}"
+                     class="empty-state">
+
+                    <div class="empty-icon">
+                        <i class="bi bi-flag"></i>
+                    </div>
+
+                    <h3 class="empty-title">
+                        처리할 이슈가 없습니다.
+                    </h3>
+
+                    <p class="empty-description">
+                        TODO 또는 IN_PROGRESS 상태의 담당 이슈가 없습니다.
+                    </p>
+                </div>
+
+                <div th:unless="${summary.todoIssueCount
+                    + summary.inProgressIssueCount == 0}"
+                     class="row g-4">
+
+                    <!-- HIGH -->
+                    <div class="col-12 col-md-4">
+                        <div class="p-3 border rounded-3 h-100">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <span class="neutral-badge priority-high">
+                                    HIGH
+                                </span>
+
+                                <strong class="fs-4"
+                                        th:text="${summary.highPriorityOpenIssueCount}">
+                                    0
+                                </strong>
+                            </div>
+
+                            <div class="progress"
+                                 role="progressbar"
+                                 aria-label="높은 우선순위 이슈 비율">
+
+                                <div class="progress-bar bg-dark"
+                                     th:style="|width: ${
+                                         summary.highPriorityOpenIssueCount
+                                         * 100.0
+                                         / (
+                                             summary.todoIssueCount
+                                             + summary.inProgressIssueCount
+                                         )
+                                     }%|">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MEDIUM -->
+                    <div class="col-12 col-md-4">
+                        <div class="p-3 border rounded-3 h-100">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <span class="neutral-badge">
+                                    MEDIUM
+                                </span>
+
+                                <strong class="fs-4"
+                                        th:text="${summary.mediumPriorityOpenIssueCount}">
+                                    0
+                                </strong>
+                            </div>
+
+                            <div class="progress"
+                                 role="progressbar"
+                                 aria-label="보통 우선순위 이슈 비율">
+
+                                <div class="progress-bar bg-secondary"
+                                     th:style="|width: ${
+                                         summary.mediumPriorityOpenIssueCount
+                                         * 100.0
+                                         / (
+                                             summary.todoIssueCount
+                                             + summary.inProgressIssueCount
+                                         )
+                                     }%|">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LOW -->
+                    <div class="col-12 col-md-4">
+                        <div class="p-3 border rounded-3 h-100">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <span class="neutral-badge priority-low">
+                                    LOW
+                                </span>
+
+                                <strong class="fs-4"
+                                        th:text="${summary.lowPriorityOpenIssueCount}">
+                                    0
+                                </strong>
+                            </div>
+
+                            <div class="progress"
+                                 role="progressbar"
+                                 aria-label="낮은 우선순위 이슈 비율">
+
+                                <div class="progress-bar bg-secondary opacity-50"
+                                     th:style="|width: ${
+                                         summary.lowPriorityOpenIssueCount
+                                         * 100.0
+                                         / (
+                                             summary.todoIssueCount
+                                             + summary.inProgressIssueCount
+                                         )
+                                     }%|">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 통계 차트 -->
+        <section th:if="${summary.assignedIssueCount > 0}"
+                 class="row g-4 mt-0">
+
+            <!-- 담당 이슈 상태 차트 -->
+            <div class="col-12 col-lg-6">
+                <div class="surface-card h-100">
+                    <div class="surface-card-header">
+                        <div>
+                            <h2 class="section-title">
+                                담당 이슈 상태 비율
+                            </h2>
+
+                            <p class="section-caption">
+                                모든 담당 이슈의 상태 분포입니다.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="surface-card-body">
+                        <div style="height: 300px;">
+                            <canvas id="issueStatusChart"
+                                    aria-label="담당 이슈 상태 차트">
+                            </canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 미완료 이슈 우선순위 차트 -->
+            <div th:if="${summary.todoIssueCount
+                + summary.inProgressIssueCount > 0}"
+                 class="col-12 col-lg-6">
+
+                <div class="surface-card h-100">
+                    <div class="surface-card-header">
+                        <div>
+                            <h2 class="section-title">
+                                미완료 이슈 우선순위
+                            </h2>
+
+                            <p class="section-caption">
+                                처리해야 할 이슈의 우선순위 분포입니다.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="surface-card-body">
+                        <div style="height: 300px;">
+                            <canvas id="issuePriorityChart"
+                                    aria-label="미완료 이슈 우선순위 차트">
+                            </canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js">
+</script>
+
+<script th:inline="javascript">
+    const todoIssueCount =
+            /*[[${summary.todoIssueCount}]]*/ 0;
+
+    const inProgressIssueCount =
+            /*[[${summary.inProgressIssueCount}]]*/ 0;
+
+    const doneIssueCount =
+            /*[[${summary.doneIssueCount}]]*/ 0;
+
+    const highPriorityOpenIssueCount =
+            /*[[${summary.highPriorityOpenIssueCount}]]*/ 0;
+
+    const mediumPriorityOpenIssueCount =
+            /*[[${summary.mediumPriorityOpenIssueCount}]]*/ 0;
+
+    const lowPriorityOpenIssueCount =
+            /*[[${summary.lowPriorityOpenIssueCount}]]*/ 0;
+
+    const statusChartElement =
+            document.getElementById("issueStatusChart");
+
+    if (statusChartElement) {
+        new Chart(
+                statusChartElement,
+                {
+                    type: "doughnut",
+
+                    data: {
+                        labels: [
+                            "TODO",
+                            "IN_PROGRESS",
+                            "DONE"
+                        ],
+
+                        datasets: [
+                            {
+                                data: [
+                                    todoIssueCount,
+                                    inProgressIssueCount,
+                                    doneIssueCount
+                                ],
+
+                                backgroundColor: [
+                                    "#cbd5e1",
+                                    "#64748b",
+                                    "#0f172a"
+                                ],
+
+                                borderWidth: 0
+                            }
+                        ]
+                    },
+
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: "68%",
+
+                        plugins: {
+                            legend: {
+                                position: "bottom",
+
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 20
+                                }
+                            }
+                        }
+                    }
+                }
+        );
+    }
+
+    const priorityChartElement =
+            document.getElementById("issuePriorityChart");
+
+    if (priorityChartElement) {
+        new Chart(
+                priorityChartElement,
+                {
+                    type: "bar",
+
+                    data: {
+                        labels: [
+                            "HIGH",
+                            "MEDIUM",
+                            "LOW"
+                        ],
+
+                        datasets: [
+                            {
+                                label: "이슈 수",
+
+                                data: [
+                                    highPriorityOpenIssueCount,
+                                    mediumPriorityOpenIssueCount,
+                                    lowPriorityOpenIssueCount
+                                ],
+
+                                backgroundColor: [
+                                    "#334155",
+                                    "#94a3b8",
+                                    "#cbd5e1"
+                                ],
+
+                                borderRadius: 6,
+                                borderSkipped: false
+                            }
+                        ]
+                    },
+
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+
+                                ticks: {
+                                    precision: 0
+                                },
+
+                                grid: {
+                                    color: "#e2e8f0"
+                                }
+                            },
+
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        },
+
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+        );
+    }
+</script>
+
+<th:block th:replace="~{fragments/common :: scripts}">
+</th:block>
+
+</body>
+</html>
